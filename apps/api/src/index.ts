@@ -12,7 +12,7 @@ const omlx = createOpenAICompatible({
   apiKey: process.env.OMLX_API_KEY ?? "",
 });
 
-const PINYIN_SYSTEM_PROMPT = `Convert pinyin syllables to Chinese characters. Output ONLY the Chinese characters.`;
+const PINYIN_SYSTEM_PROMPT = `将拼音转换为中文。只输出中文汉字。`;
 
 const app = new Hono();
 
