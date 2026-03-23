@@ -6,7 +6,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 const omlx = createOpenAICompatible({
   name: "omlx",
   baseURL: "http://localhost:8000/v1",
-  apiKey: "not-needed", // local model, no auth required
+  apiKey: process.env.OMLX_API_KEY ?? "",
 });
 
 const app = new Hono();
