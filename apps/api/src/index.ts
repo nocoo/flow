@@ -19,7 +19,7 @@ app.post("/api/chat", async (c) => {
   const { messages }: { messages: UIMessage[] } = await c.req.json();
 
   const result = streamText({
-    model: omlx("mlx-community/Qwen3-8B-4bit"),
+    model: omlx("Qwen3.5-2B-6bit"),
     messages: await convertToModelMessages(messages),
   });
 
