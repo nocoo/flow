@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SendHorizonal, Bot, User, Loader2 } from "lucide-react";
 
 const transport = new DefaultChatTransport({
-  api: "http://localhost:3000/api/chat",
+  api: "https://flow-api.dev.hexly.ai/api/chat",
 });
 
 export function Chat() {

@@ -27,6 +27,6 @@ app.post("/api/chat", async (c) => {
 });
 
 export default {
-  port: 3000,
+  port: 7045,
   fetch: app.fetch,
 };

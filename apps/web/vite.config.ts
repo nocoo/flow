@@ -6,6 +6,10 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    port: 7044,
+    allowedHosts: ["flow.dev.hexly.ai"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
