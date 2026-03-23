@@ -1,19 +1,28 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { useRef, useEffect, useState, type FormEvent } from "react";
+import { useRef, useEffect, useState, useMemo, type FormEvent } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SendHorizonal, Bot, User, Loader2 } from "lucide-react";
+import { useSettings } from "@/hooks/use-settings";
+import { API_BASE } from "@/lib/api";
 
 const transport = new DefaultChatTransport({
-  api: "https://flow-api.dev.hexly.ai/api/chat",
+  api: `${API_BASE}/api/chat`,
 });
 
 export function Chat() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { settings } = useSettings();
+
+  const providerLabel = useMemo(() => {
+    if (!settings) return "Loading...";
+    const config = settings[settings.activeProvider];
+    return `${settings.activeProvider === "cloud" ? "Cloud" : "Local"} · ${config.modelId}`;
+  }, [settings]);
 
   const { messages, sendMessage, status, stop, error } = useChat({
     transport,
@@ -49,7 +58,7 @@ export function Chat() {
         <Bot className="size-5 text-primary" />
         <h1 className="text-lg font-semibold">Flow Chat</h1>
         <span className="ml-auto text-xs text-muted-foreground">
-          OMLX · localhost:8000
+          {providerLabel}
         </span>
       </div>
 

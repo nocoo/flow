@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { API_BASE } from "@/lib/api";
 
-const DEFAULT_API_URL = "https://flow-api.dev.hexly.ai/api/pinyin";
+const DEFAULT_API_URL = `${API_BASE}/api/pinyin`;
 const DEFAULT_DEBOUNCE_MS = 200;
 
 interface UsePinyinOptions {
