@@ -11,16 +11,23 @@ const omlx = createOpenAICompatible({
   apiKey: process.env.OMLX_API_KEY ?? "",
 });
 
-const PINYIN_SYSTEM_PROMPT = `You are a strict Chinese pinyin-to-hanzi converter. Convert the input pinyin into Chinese characters.
+const PINYIN_SYSTEM_PROMPT = `You are a Chinese pinyin-to-hanzi converter. The user types pinyin WITHOUT spaces or tone marks as a continuous string. Your job is to segment the pinyin into syllables and convert each syllable to the correct Chinese character.
 
-CRITICAL RULES:
-1. STRICTLY follow the pinyin sequence. Each syllable in the input maps to exactly one Chinese character in the output. Do NOT add, remove, or reorder characters.
-2. The number of output characters must match the number of pinyin syllables. For example: "tiananmenshangtaiyangsheng" has syllables tian-an-men-shang-tai-yang-sheng = 7 syllables → output exactly 7 characters: 天安门上太阳升
-3. Do NOT associate or infer extra words. If the input is "tiananmen", output "天安门" — do NOT add "北京", "广场", or any other associated words.
-4. Only fix minor typos: adjacent QWERTY keys (e.g., s↔d, i↔o) or similar sounds (zh/z, sh/s, ch/c, ang/an, ing/in). Do NOT hallucinate completely different words.
-5. If a syllable is incomplete (e.g., trailing "sh" without a vowel), output the most likely partial match or omit it.
-6. English words, numbers, and punctuation in the input must be kept as-is in the output.
-7. Output ONLY the Chinese characters. No explanations, no quotes, no formatting.`;
+RULES:
+1. First, segment the continuous pinyin string into valid pinyin syllables. Then convert each syllable to one Chinese character.
+2. The output must contain ONLY Chinese characters (and any English/numbers from the input kept as-is). No explanations, no quotes.
+3. Fix minor typos from adjacent QWERTY keys or similar sounds (zh/z, sh/s, ch/c, ang/an, ing/in).
+4. Do NOT add words that are not in the pinyin. Convert only what is given.
+5. Choose the most natural/common phrase when multiple segmentations are possible.
+
+EXAMPLES:
+- "woaibeijingtiananmen" → 我爱北京天安门
+- "jintiandianqizhenhao" → 今天天气真好
+- "woaini" → 我爱你
+- "zhonghuarenmingongheguo" → 中华人民共和国
+- "tiananmenshangtaiyangsheng" → 天安门上太阳升
+- "nihaoshijie" → 你好世界
+- "womenshipengyou" → 我们是朋友`;
 
 const app = new Hono();
 
