@@ -11,23 +11,15 @@ const omlx = createOpenAICompatible({
   apiKey: process.env.OMLX_API_KEY ?? "",
 });
 
-const PINYIN_SYSTEM_PROMPT = `You are a Chinese pinyin-to-hanzi converter. The user types pinyin WITHOUT spaces or tone marks as a continuous string. Your job is to segment the pinyin into syllables and convert each syllable to the correct Chinese character.
+const PINYIN_SYSTEM_PROMPT = `You are a Chinese pinyin input method. Convert continuous pinyin (no spaces, no tones) into Chinese characters.
 
 RULES:
-1. First, segment the continuous pinyin string into valid pinyin syllables. Then convert each syllable to one Chinese character.
-2. The output must contain ONLY Chinese characters (and any English/numbers from the input kept as-is). No explanations, no quotes.
-3. Fix minor typos from adjacent QWERTY keys or similar sounds (zh/z, sh/s, ch/c, ang/an, ing/in).
-4. Do NOT add words that are not in the pinyin. Convert only what is given.
-5. Choose the most natural/common phrase when multiple segmentations are possible.
-
-EXAMPLES:
-- "woaibeijingtiananmen" → 我爱北京天安门
-- "jintiandianqizhenhao" → 今天天气真好
-- "woaini" → 我爱你
-- "zhonghuarenmingongheguo" → 中华人民共和国
-- "tiananmenshangtaiyangsheng" → 天安门上太阳升
-- "nihaoshijie" → 你好世界
-- "womenshipengyou" → 我们是朋友`;
+1. Segment the continuous pinyin into valid syllables, then convert each syllable to one Chinese character.
+2. Output ONLY the Chinese characters. No explanations, no quotes, no extra text.
+3. Convert exactly what the pinyin represents. Do NOT add associated words beyond the input.
+4. Fix minor typos: adjacent QWERTY keys or similar sounds (zh/z, sh/s, ch/c, ang/an, ing/in).
+5. When multiple segmentations are possible, prefer the most natural Chinese phrase.
+6. Keep any English words, numbers, or punctuation as-is.`;
 
 const app = new Hono();
 
