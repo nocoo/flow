@@ -15,9 +15,11 @@ export function Chat() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, isLoading, stop, error } = useChat({
+  const { messages, sendMessage, status, stop, error } = useChat({
     transport,
   });
+
+  const isLoading = status === "submitted" || status === "streaming";
 
   // auto-scroll to bottom on new messages
   useEffect(() => {
