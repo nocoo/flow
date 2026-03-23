@@ -32,7 +32,7 @@ export function PinyinInput() {
     const value = e.target.value;
     setInput(value);
     if (value.trim()) {
-      predict(value);
+      predict(value, entries.map((e) => e.chinese));
     } else {
       cancel();
       setDraft(null);

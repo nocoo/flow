@@ -17,7 +17,7 @@ interface UsePinyinReturn {
   /** Error message if the last request failed */
   error: string | null;
   /** Trigger a prediction for the given text */
-  predict: (text: string) => void;
+  predict: (text: string, context?: string[]) => void;
   /** Cancel any in-flight request and clear timers */
   cancel: () => void;
 }
@@ -45,7 +45,7 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
   }, []);
 
   const predict = useCallback(
-    (text: string) => {
+    (text: string, context?: string[]) => {
       // Always abort previous in-flight request immediately
       abortRef.current?.abort();
       abortRef.current = null;
@@ -73,7 +73,7 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
           const res = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text }),
+            body: JSON.stringify({ text, context }),
             signal: controller.signal,
           });
 
