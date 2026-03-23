@@ -1,7 +1,8 @@
 /**
  * Pinyin syllable segmenter.
  * Splits a continuous pinyin string (no spaces/tones) into space-separated syllables.
- * Uses greedy longest-match from a complete pinyin syllable table.
+ * Uses DP longest-match from a complete pinyin syllable table.
+ * Also provides span-level type annotations (pinyin / english_like / uncertain).
  */
 
 // Complete set of valid pinyin syllables (without tones)
@@ -94,7 +95,7 @@ export function segmentPinyin(input: string): string {
       result.push(seg.text);
       continue;
     }
-    result.push(...segmentAlpha(seg.text));
+    result.push(...segmentAlpha(seg.text).parts);
   }
 
   return result.join(" ");
@@ -104,8 +105,9 @@ export function segmentPinyin(input: string): string {
  * DP-based segmentation for a purely alphabetic string.
  * Finds the segmentation that covers the most characters with valid syllables.
  * Tiebreaker: fewer syllables (= longer syllables) preferred.
+ * Returns parts array and coverage ratio.
  */
-function segmentAlpha(s: string): string[] {
+function segmentAlpha(s: string): { parts: string[]; coverage: number } {
   const n = s.length;
 
   // dp[i] = { covered: max chars covered, parts: min syllable count } for s[0..i-1]
@@ -181,5 +183,133 @@ function segmentAlpha(s: string): string[] {
   }
 
   parts.reverse();
-  return parts;
+
+  const covered = dp[n].covered === -1 ? 0 : dp[n].covered;
+  const coverage = n > 0 ? covered / n : 1;
+
+  return { parts, coverage };
+}
+
+/** Span type: pinyin (high confidence), uncertain (ambiguous), english_like (low coverage) */
+export type SpanType = "pinyin" | "uncertain" | "english_like";
+
+export interface Span {
+  text: string;
+  type: SpanType;
+}
+
+export interface SegmentResult {
+  /** Space-separated segmented string */
+  segmented: string;
+  /** Annotated spans with type info */
+  spans: Span[];
+}
+
+/**
+ * Check if a DP segmentation has ambiguous boundaries.
+ * Re-runs DP allowing alternative paths and checks if multiple
+ * distinct segmentations yield the same optimal score.
+ */
+function hasAmbiguousBoundaries(s: string): boolean {
+  const n = s.length;
+
+  // Count how many optimal paths reach each position
+  const dp: { covered: number; parts: number; pathCount: number }[] =
+    Array.from({ length: n + 1 }, () => ({ covered: -1, parts: 0, pathCount: 0 }));
+  dp[0] = { covered: 0, parts: 0, pathCount: 1 };
+
+  for (let i = 0; i < n; i++) {
+    if (dp[i].covered === -1) continue;
+
+    const maxLen = Math.min(MAX_SYLLABLE_LEN, n - i);
+    for (let len = 1; len <= maxLen; len++) {
+      const candidate = s.slice(i, i + len);
+      const j = i + len;
+      if (!PINYIN_SYLLABLES.has(candidate)) continue;
+
+      const newCovered = dp[i].covered + len;
+      const newParts = dp[i].parts + 1;
+
+      if (dp[j].covered === -1 ||
+          newCovered > dp[j].covered ||
+          (newCovered === dp[j].covered && newParts < dp[j].parts)) {
+        dp[j] = { covered: newCovered, parts: newParts, pathCount: dp[i].pathCount };
+      } else if (newCovered === dp[j].covered && newParts === dp[j].parts) {
+        dp[j].pathCount += dp[i].pathCount;
+      }
+    }
+
+    // Skip path
+    const newParts = dp[i].parts + 1;
+    const skipCovered = dp[i].covered;
+    if (dp[i + 1].covered === -1 ||
+        skipCovered > dp[i + 1].covered ||
+        (skipCovered === dp[i + 1].covered && newParts < dp[i + 1].parts)) {
+      dp[i + 1] = { covered: skipCovered, parts: newParts, pathCount: dp[i].pathCount };
+    } else if (skipCovered === dp[i + 1].covered && newParts === dp[i + 1].parts) {
+      dp[i + 1].pathCount += dp[i].pathCount;
+    }
+  }
+
+  return dp[n].pathCount > 1;
+}
+
+/**
+ * Segment a continuous pinyin string with span-level type annotations.
+ * Each alpha segment is classified as:
+ * - "english_like": coverage < 0.6 (too many unmatched chars)
+ * - "uncertain": multiple valid segmentations exist
+ * - "pinyin": clean single-best segmentation
+ */
+export function segmentPinyinWithSpans(input: string): SegmentResult {
+  const lower = input.toLowerCase().trim();
+  if (!lower) return { segmented: "", spans: [] };
+
+  // Extract contiguous alpha runs and non-alpha segments
+  const segments: { text: string; isAlpha: boolean }[] = [];
+  let buf = "";
+  let bufIsAlpha = false;
+
+  for (let i = 0; i < lower.length; i++) {
+    const isAlpha = /[a-z]/.test(lower[i]);
+    if (i === 0) {
+      buf = lower[i];
+      bufIsAlpha = isAlpha;
+    } else if (isAlpha === bufIsAlpha) {
+      buf += lower[i];
+    } else {
+      segments.push({ text: buf, isAlpha: bufIsAlpha });
+      buf = lower[i];
+      bufIsAlpha = isAlpha;
+    }
+  }
+  if (buf) segments.push({ text: buf, isAlpha: bufIsAlpha });
+
+  const allParts: string[] = [];
+  const spans: Span[] = [];
+
+  for (const seg of segments) {
+    if (!seg.isAlpha) {
+      allParts.push(seg.text);
+      spans.push({ text: seg.text, type: "pinyin" });
+      continue;
+    }
+
+    const { parts, coverage } = segmentAlpha(seg.text);
+
+    if (coverage < 0.6) {
+      // Too many unmatched chars — likely English
+      allParts.push(seg.text);
+      spans.push({ text: seg.text, type: "english_like" });
+    } else if (hasAmbiguousBoundaries(seg.text)) {
+      // Multiple valid segmentations — mark uncertain
+      allParts.push(...parts);
+      spans.push({ text: parts.join(" "), type: "uncertain" });
+    } else {
+      allParts.push(...parts);
+      spans.push({ text: parts.join(" "), type: "pinyin" });
+    }
+  }
+
+  return { segmented: allParts.join(" "), spans };
 }

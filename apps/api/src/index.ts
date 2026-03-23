@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { streamText, UIMessage, convertToModelMessages } from "ai";
-import { segmentPinyin } from "./pinyin-segmenter";
+import { segmentPinyinWithSpans } from "./pinyin-segmenter";
 import { getActiveProvider } from "./provider";
 import { settingsRouter } from "./routes/settings";
 
@@ -52,7 +52,7 @@ app.post("/api/pinyin", async (c) => {
   }
 
   const { model } = getActiveProvider();
-  const segmented = segmentPinyin(text);
+  const { segmented } = segmentPinyinWithSpans(text);
 
   // Build structured prompt: raw is evidence, segmented is suggestion
   let userPrompt = `raw: ${text}\nsegmented: ${segmented}`;
