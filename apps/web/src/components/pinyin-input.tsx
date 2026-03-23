@@ -116,7 +116,7 @@ export function PinyinInput() {
   const latestChinese = entries.length > 0 ? entries[entries.length - 1].chinese : "";
 
   return (
-    <div className="flex w-full max-w-md flex-col rounded-xl border bg-card shadow-lg h-[80svh]">
+    <div className="flex w-full max-w-xl flex-col rounded-xl border bg-card shadow-lg h-[80svh]">
       {/* Header */}
       <div className="flex items-center gap-3 border-b px-6 py-4">
         <Keyboard className="size-5 text-primary" />
