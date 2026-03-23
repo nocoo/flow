@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState } from "react";
 import { usePinyin } from "@/hooks/use-pinyin";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -11,109 +11,92 @@ interface CommittedEntry {
   id: string;
   pinyin: string;
   chinese: string;
-  timestamp: number;
 }
 
-const AUTO_COMMIT_INTERVAL_MS = 1000;
+const AUTO_SNAPSHOT_INTERVAL_MS = 1000;
 
 export function PinyinInput() {
   const [input, setInput] = useState("");
+  // Frozen entries from previous "上屏" operations
   const [entries, setEntries] = useState<CommittedEntry[]>([]);
-  const [committedPinyin, setCommittedPinyin] = useState("");
+  // The live draft that auto-updates every second while user is typing
+  const [draft, setDraft] = useState<{ pinyin: string; chinese: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const lastCommittedChineseRef = useRef("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastSnapshotRef = useRef("");
 
   const { prediction, isPredicting, error, predict, cancel } = usePinyin();
 
-  // Full pinyin = all previously committed pinyin + current input
-  const getFullPinyin = useCallback(
-    (currentInput: string) => {
-      const parts = [committedPinyin, currentInput].filter(Boolean);
-      return parts.join("");
-    },
-    [committedPinyin]
-  );
+  // On every input change, send the full input to LLM
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInput(value);
+    if (value.trim()) {
+      predict(value);
+    } else {
+      cancel();
+      setDraft(null);
+      lastSnapshotRef.current = "";
+    }
+  };
 
-  // Commit: snapshot the current full prediction as an entry
-  const commit = useCallback(
-    (currentInput: string, chinese: string) => {
-      if (!currentInput.trim() || !chinese.trim()) return;
-
-      const fullPinyin = committedPinyin + currentInput.trim();
-
+  // Space / Enter = 上屏: freeze current prediction as a committed entry, clear input
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (
+      (e.key === " " || e.key === "Enter") &&
+      input.trim() &&
+      prediction.trim()
+    ) {
+      e.preventDefault();
       setEntries((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
-          pinyin: fullPinyin,
-          chinese: chinese.trim(),
-          timestamp: Date.now(),
+          pinyin: input.trim(),
+          chinese: prediction.trim(),
         },
       ]);
-      setCommittedPinyin(fullPinyin);
-      lastCommittedChineseRef.current = chinese.trim();
-    },
-    [committedPinyin]
-  );
-
-  // On every input change, send full accumulated pinyin to LLM
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setInput(value);
-    const fullPinyin = getFullPinyin(value);
-    predict(fullPinyin);
-  };
-
-  // Space commits current prediction
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === " " && input.trim() && prediction.trim()) {
-      e.preventDefault();
-      commit(input, prediction);
       setInput("");
+      setDraft(null);
+      lastSnapshotRef.current = "";
       cancel();
-      // Don't clear prediction — keep showing last result
     }
   };
 
-  // Auto-commit every 1 second if prediction changed
+  // Auto-snapshot every second: update the draft card with latest prediction
+  // Does NOT clear the input — user keeps typing
   useEffect(() => {
     const interval = setInterval(() => {
       if (
         input.trim() &&
         prediction.trim() &&
         !isPredicting &&
-        prediction.trim() !== lastCommittedChineseRef.current
+        prediction.trim() !== lastSnapshotRef.current
       ) {
-        commit(input, prediction);
-        setInput("");
-        cancel();
+        setDraft({ pinyin: input.trim(), chinese: prediction.trim() });
+        lastSnapshotRef.current = prediction.trim();
       }
-    }, AUTO_COMMIT_INTERVAL_MS);
+    }, AUTO_SNAPSHOT_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [input, prediction, isPredicting, commit, cancel]);
+  }, [input, prediction, isPredicting]);
 
-  // Auto-scroll to bottom on new entries
+  // Auto-scroll on new entries or draft updates
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [entries]);
+  }, [entries, draft]);
 
-  // Clear all entries
+  // Clear everything
   const clearAll = () => {
     setEntries([]);
     setInput("");
-    setCommittedPinyin("");
+    setDraft(null);
     cancel();
-    predict("");
-    lastCommittedChineseRef.current = "";
+    lastSnapshotRef.current = "";
     inputRef.current?.focus();
   };
-
-  // The latest entry's chinese is the "full text so far"
-  const latestChinese = entries.length > 0 ? entries[entries.length - 1].chinese : "";
 
   return (
     <div className="flex w-full max-w-xl flex-col rounded-xl border bg-card shadow-lg h-[80svh]">
@@ -126,39 +109,54 @@ export function PinyinInput() {
         </span>
       </div>
 
-      {/* Committed entries */}
+      {/* Committed entries + live draft */}
       <ScrollArea className="flex-1 px-4" ref={scrollRef}>
         <div className="space-y-3 py-4">
-          {entries.length === 0 && !prediction && (
+          {entries.length === 0 && !draft && !prediction && (
             <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
               <Keyboard className="size-10" />
               <p className="text-sm">Type pinyin to start</p>
-              <p className="text-xs">Press Space to commit</p>
+              <p className="text-xs">Space or Enter to commit</p>
             </div>
           )}
 
-          {entries.map((entry, index) => (
+          {/* Frozen entries */}
+          {entries.map((entry) => (
             <Card key={entry.id} className="px-4 py-3">
               <div className="min-w-0">
                 <Badge variant="secondary" className="mb-1.5 font-mono text-xs">
-                  {index > 0
-                    ? entry.pinyin.slice(entries[index - 1].pinyin.length)
-                    : entry.pinyin}
+                  {entry.pinyin}
                 </Badge>
                 <p className="text-lg leading-snug">{entry.chinese}</p>
               </div>
             </Card>
           ))}
+
+          {/* Live draft — auto-updated every second, visually distinct */}
+          {draft && (
+            <Card className="px-4 py-3 border-dashed border-primary/30">
+              <div className="min-w-0">
+                <Badge variant="outline" className="mb-1.5 font-mono text-xs">
+                  {draft.pinyin}
+                </Badge>
+                <p className="text-lg leading-snug text-foreground/80">
+                  {draft.chinese}
+                </p>
+              </div>
+            </Card>
+          )}
         </div>
       </ScrollArea>
 
-      {/* Prediction display — shows live full-text prediction */}
+      {/* Prediction display — shows live streaming result */}
       <div className="border-t bg-muted/50 px-4 py-3">
         <div className="flex items-center justify-between gap-2 min-h-8">
           <p className="text-lg leading-snug text-foreground">
-            {prediction || latestChinese || (
+            {prediction || (
               <span className="text-sm text-muted-foreground">
-                {input.trim() ? "Waiting for prediction..." : "Prediction will appear here"}
+                {input.trim()
+                  ? "Waiting for prediction..."
+                  : "Prediction will appear here"}
               </span>
             )}
           </p>
@@ -187,7 +185,7 @@ export function PinyinInput() {
             className="font-mono"
             autoFocus
           />
-          {entries.length > 0 && (
+          {(entries.length > 0 || draft) && (
             <Button
               type="button"
               variant="ghost"
@@ -200,7 +198,7 @@ export function PinyinInput() {
           )}
         </div>
         <p className="mt-1.5 text-center text-xs text-muted-foreground">
-          Space to commit · Auto-saves every second
+          Space / Enter to commit
         </p>
       </div>
     </div>
