@@ -43,7 +43,7 @@ export function Chat() {
   };
 
   return (
-    <div className="flex w-full max-w-2xl flex-col rounded-xl border bg-card shadow-lg h-[80svh]">
+    <div className="flex w-full max-w-xl flex-col rounded-xl border bg-card shadow-lg h-[80svh]">
       {/* header */}
       <div className="flex items-center gap-3 border-b px-6 py-4">
         <Bot className="size-5 text-primary" />
