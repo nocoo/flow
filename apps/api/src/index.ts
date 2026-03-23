@@ -13,13 +13,20 @@ const omlx = createOpenAICompatible({
 
 const PINYIN_SYSTEM_PROMPT = `You are a Chinese pinyin input method. Convert continuous pinyin (no spaces, no tones) into Chinese characters.
 
+Step 1: Segment the input into valid pinyin syllables separated by hyphens.
+Step 2: Convert each syllable to the most appropriate Chinese character.
+Step 3: Output ONLY the final Chinese characters, nothing else.
+
+For example, if given "woaibeijingtiananmen":
+Step 1: wo-ai-bei-jing-tian-an-men
+Step 2: 我-爱-北-京-天-安-门
+Step 3: 我爱北京天安门
+
 RULES:
-1. Segment the continuous pinyin into valid syllables, then convert each syllable to one Chinese character.
-2. Output ONLY the Chinese characters. No explanations, no quotes, no extra text.
-3. Convert exactly what the pinyin represents. Do NOT add associated words beyond the input.
-4. Fix minor typos: adjacent QWERTY keys or similar sounds (zh/z, sh/s, ch/c, ang/an, ing/in).
-5. When multiple segmentations are possible, prefer the most natural Chinese phrase.
-6. Keep any English words, numbers, or punctuation as-is.`;
+- Output ONLY step 3 (the final Chinese characters). Do NOT show steps 1 or 2.
+- Convert exactly what the pinyin represents. Do NOT add extra words.
+- Fix minor typos: adjacent QWERTY keys or similar sounds (zh/z, sh/s, ch/c).
+- Keep any English words, numbers, or punctuation as-is.`;
 
 const app = new Hono();
 
@@ -40,6 +47,7 @@ app.post("/api/chat", async (c) => {
 
 app.post("/api/pinyin", async (c) => {
   const { text }: { text: string } = await c.req.json();
+  console.log("[pinyin] received:", JSON.stringify(text));
 
   if (!text?.trim()) {
     return c.json({ result: "" });
