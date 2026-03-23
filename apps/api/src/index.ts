@@ -40,23 +40,17 @@ app.post("/api/chat", async (c) => {
 });
 
 app.post("/api/pinyin", async (c) => {
-  const { text, context }: { text: string; context?: string[] } =
-    await c.req.json();
+  const { text }: { text: string } = await c.req.json();
 
   if (!text?.trim()) {
     return c.json({ result: "" });
   }
 
-  const contextHint =
-    context && context.length > 0
-      ? `\nPrevious context: ${context.join("")}\nContinue naturally from this context.`
-      : "";
-
   const result = streamText({
     model: omlx(MODEL_ID),
-    system: PINYIN_SYSTEM_PROMPT + contextHint,
+    system: PINYIN_SYSTEM_PROMPT,
     prompt: text,
-    maxTokens: 100,
+    maxTokens: 200,
     temperature: 0.1,
   });
 
