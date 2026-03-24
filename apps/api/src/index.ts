@@ -1,9 +1,20 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { streamText, UIMessage, convertToModelMessages } from "ai";
+import {
+  streamText,
+  UIMessage,
+  convertToModelMessages,
+  wrapLanguageModel,
+  extractReasoningMiddleware,
+} from "ai";
 import { segmentPinyinWithSpans } from "./pinyin-segmenter";
 import { getActiveProvider } from "./provider";
 import { settingsRouter } from "./routes/settings";
+
+const thinkTagMiddleware = extractReasoningMiddleware({
+  tagName: "think",
+  startWithReasoning: true,
+});
 
 const PINYIN_SYSTEM_PROMPT = `你是一个中文输入法引擎（IME）的解码器。
 
@@ -37,7 +48,7 @@ app.post("/api/chat", async (c) => {
   const { model } = getActiveProvider();
 
   const result = streamText({
-    model,
+    model: wrapLanguageModel({ model, middleware: thinkTagMiddleware }),
     messages: await convertToModelMessages(messages),
   });
 

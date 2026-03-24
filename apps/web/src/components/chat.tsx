@@ -1,17 +1,55 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { DefaultChatTransport, type ReasoningUIPart } from "ai";
 import { useRef, useEffect, useState, useMemo, type FormEvent } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendHorizonal, Bot, User, Loader2 } from "lucide-react";
+import { SendHorizonal, Bot, User, Loader2, ChevronRight, BrainCircuit } from "lucide-react";
 import { useSettings } from "@/hooks/use-settings";
 import { API_BASE } from "@/lib/api";
 
 const transport = new DefaultChatTransport({
   api: `${API_BASE}/api/chat`,
 });
+
+function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
+  const isStreaming = part.state !== "done";
+  const [open, setOpen] = useState(isStreaming);
+
+  // Auto-collapse when streaming finishes
+  useEffect(() => {
+    if (!isStreaming) setOpen(false);
+  }, [isStreaming]);
+
+  if (!part.text && !isStreaming) return null;
+
+  return (
+    <div className="my-1.5 rounded-md border border-border/60 bg-muted/40 text-xs">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 px-2.5 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ChevronRight
+          className={`size-3 shrink-0 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+        />
+        <BrainCircuit className="size-3 shrink-0" />
+        <span className="font-medium">
+          Thinking{isStreaming ? "..." : ""}
+        </span>
+        {isStreaming && (
+          <Loader2 className="ml-auto size-3 animate-spin" />
+        )}
+      </button>
+      {open && (
+        <div className="border-t border-border/40 px-2.5 py-2 text-muted-foreground whitespace-pre-wrap leading-relaxed">
+          {part.text}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Chat() {
   const [input, setInput] = useState("");
@@ -96,6 +134,14 @@ export function Chat() {
                 }`}
               >
                 {message.parts.map((part, i) => {
+                  if (part.type === "reasoning") {
+                    return (
+                      <ReasoningBlock
+                        key={`${message.id}-${i}`}
+                        part={part}
+                      />
+                    );
+                  }
                   if (part.type === "text") {
                     return (
                       <span key={`${message.id}-${i}`} className="whitespace-pre-wrap">
