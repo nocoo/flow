@@ -44,15 +44,22 @@ app.get("/", (c) => c.json({ status: "ok", name: "flow-api" }));
 app.route("/", settingsRouter);
 
 app.post("/api/chat", async (c) => {
-  const { messages }: { messages: UIMessage[] } = await c.req.json();
+  const {
+    messages,
+    reasoning = true,
+  }: { messages: UIMessage[]; reasoning?: boolean } = await c.req.json();
   const { model } = getActiveProvider();
 
+  const wrappedModel = reasoning
+    ? wrapLanguageModel({ model, middleware: thinkTagMiddleware })
+    : model;
+
   const result = streamText({
-    model: wrapLanguageModel({ model, middleware: thinkTagMiddleware }),
+    model: wrappedModel,
     messages: await convertToModelMessages(messages),
   });
 
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({ sendReasoning: reasoning });
 });
 
 app.post("/api/pinyin", async (c) => {
@@ -75,13 +82,14 @@ app.post("/api/pinyin", async (c) => {
   }
 
   const result = streamText({
-    model,
+    model: wrapLanguageModel({ model, middleware: thinkTagMiddleware }),
     system: PINYIN_SYSTEM_PROMPT,
     prompt: userPrompt,
     maxTokens: 200,
     temperature: 0,
   });
 
+  // Only send text content — reasoning is silently stripped
   return result.toTextStreamResponse();
 });
 

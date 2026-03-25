@@ -9,8 +9,12 @@ import { SendHorizonal, Bot, User, Loader2, ChevronRight, BrainCircuit } from "l
 import { useSettings } from "@/hooks/use-settings";
 import { API_BASE } from "@/lib/api";
 
+/** Shared mutable ref so the static transport can read the latest reasoning toggle */
+let _reasoningEnabled = true;
+
 const transport = new DefaultChatTransport({
   api: `${API_BASE}/api/chat`,
+  body: () => ({ reasoning: _reasoningEnabled }),
 });
 
 /** Aggregate all reasoning parts into a single text + streaming flag */
@@ -84,8 +88,8 @@ function ReasoningBlock({ text, isStreaming, messageId }: {
   );
 }
 
-function AssistantContent({ message }: { message: UIMessage }) {
-  const reasoning = getReasoningSummary(message);
+function AssistantContent({ message, showReasoning }: { message: UIMessage; showReasoning: boolean }) {
+  const reasoning = showReasoning ? getReasoningSummary(message) : null;
   const text = getTextContent(message);
 
   return (
@@ -104,8 +108,12 @@ function AssistantContent({ message }: { message: UIMessage }) {
 
 export function Chat() {
   const [input, setInput] = useState("");
+  const [reasoning, setReasoning] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { settings } = useSettings();
+
+  // Keep module-level ref in sync so transport body reads the latest value
+  _reasoningEnabled = reasoning;
 
   const providerLabel = useMemo(() => {
     if (!settings) return "Loading...";
@@ -146,9 +154,24 @@ export function Chat() {
       <div className="flex items-center gap-3 border-b px-6 py-4">
         <Bot className="size-5 text-primary" />
         <h1 className="text-lg font-semibold">Flow Chat</h1>
-        <span className="ml-auto text-xs text-muted-foreground">
-          {providerLabel}
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setReasoning((v) => !v)}
+            title={reasoning ? "Reasoning enabled" : "Reasoning disabled"}
+            className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors ${
+              reasoning
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BrainCircuit className="size-3.5" />
+            <span className="hidden sm:inline">Think</span>
+          </button>
+          <span className="text-xs text-muted-foreground">
+            {providerLabel}
+          </span>
+        </div>
       </div>
 
       {/* messages */}
@@ -185,7 +208,7 @@ export function Chat() {
                 }`}
               >
                 {message.role === "assistant" ? (
-                  <AssistantContent message={message} />
+                  <AssistantContent message={message} showReasoning={reasoning} />
                 ) : (
                   message.parts.map((part, i) =>
                     part.type === "text" ? (
