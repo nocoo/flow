@@ -2,11 +2,9 @@ import { useState } from "react";
 import { Chat } from "@/components/chat";
 import { PinyinInput } from "@/components/pinyin-input";
 import { PolishInput } from "@/components/polish-input";
+import { SettingsPanel } from "@/components/settings-panel";
 import { FlowBackground } from "@/components/flow-background";
-import { SettingsSheet } from "@/components/settings-sheet";
 import { SettingsProvider } from "@/hooks/use-settings";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
 
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -15,21 +13,10 @@ export default function App() {
     <SettingsProvider>
       <FlowBackground />
       <div className="relative flex min-h-svh items-center justify-center gap-6 p-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-4 top-4"
-          onClick={() => setSettingsOpen(true)}
-          title="Settings"
-        >
-          <Settings className="size-5" />
-        </Button>
-
         <Chat />
         <PinyinInput />
         <PolishInput />
-
-        <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
+        <SettingsPanel open={settingsOpen} onToggle={() => setSettingsOpen((v) => !v)} />
       </div>
     </SettingsProvider>
   );
