@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Chat } from "@/components/chat";
 import { PinyinInput } from "@/components/pinyin-input";
+import { PolishInput } from "@/components/polish-input";
 import { FlowBackground } from "@/components/flow-background";
 import { SettingsSheet } from "@/components/settings-sheet";
 import { SettingsProvider } from "@/hooks/use-settings";
@@ -26,6 +27,7 @@ export default function App() {
 
         <Chat />
         <PinyinInput />
+        <PolishInput />
 
         <SettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} />
       </div>
