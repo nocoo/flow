@@ -14,6 +14,8 @@ interface UsePinyinReturn {
   prediction: string;
   /** Whether a prediction request is in flight */
   isPredicting: boolean;
+  /** Whether the model is currently in thinking/reasoning phase */
+  isThinking: boolean;
   /** Error message if the last request failed */
   error: string | null;
   /** Trigger a prediction for the given text */
@@ -30,6 +32,7 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
 
   const [prediction, setPrediction] = useState("");
   const [isPredicting, setIsPredicting] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -60,6 +63,7 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
       if (!text.trim()) {
         setPrediction("");
         setIsPredicting(false);
+        setIsThinking(false);
         return;
       }
 
@@ -84,14 +88,48 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
           const reader = res.body!.getReader();
           const decoder = new TextDecoder();
           let accumulated = "";
+          let buffer = "";
+          let thinking = false;
 
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-            accumulated += decoder.decode(value, { stream: true });
-            setPrediction(accumulated);
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete NDJSON lines
+            const lines = buffer.split("\n");
+            // Keep the last incomplete line in the buffer
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const msg = JSON.parse(line);
+                if (msg.t === "r") {
+                  // Reasoning delta — signal thinking state
+                  if (!thinking) {
+                    thinking = true;
+                    setIsThinking(true);
+                  }
+                } else if (msg.t === "t") {
+                  // Text delta — exit thinking state, accumulate prediction
+                  if (thinking) {
+                    thinking = false;
+                    setIsThinking(false);
+                  }
+                  accumulated += msg.v;
+                  setPrediction(accumulated);
+                } else if (msg.t === "d") {
+                  // Done
+                }
+              } catch {
+                // Malformed line, skip
+              }
+            }
           }
 
+          setIsThinking(false);
           setIsPredicting(false);
           setError(null);
         } catch (err) {
@@ -100,6 +138,7 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
             return;
           }
           setError(err instanceof Error ? err.message : "Unknown error");
+          setIsThinking(false);
           setIsPredicting(false);
         }
       }, debounceMs);
@@ -110,5 +149,5 @@ export function usePinyin(options: UsePinyinOptions = {}): UsePinyinReturn {
   // Cleanup on unmount
   useEffect(() => () => cancel(), [cancel]);
 
-  return { prediction, isPredicting, error, predict, cancel };
+  return { prediction, isPredicting, isThinking, error, predict, cancel };
 }

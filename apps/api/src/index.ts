@@ -77,31 +77,44 @@ app.post("/api/pinyin", async (c) => {
     temperature: 0,
   });
 
-  // Thinking models may put the entire answer into reasoning_content with
-  // empty text content in streaming mode. Stream text deltas first; if text
-  // ends up empty, fall back to reasoning output.
+  // Stream reasoning + text deltas via NDJSON so the frontend can show
+  // thinking progress for thinking models (e.g. Qwen3.5).
+  // Protocol: one JSON object per line
+  //   {"t":"r","v":"..."} — reasoning delta
+  //   {"t":"t","v":"..."} — text delta
+  //   {"t":"d"}           — done
   const encoder = new TextEncoder();
   const textChunks: string[] = [];
 
   const stream = new ReadableStream({
     async start(controller) {
-      for await (const delta of result.textStream) {
-        textChunks.push(delta);
-        controller.enqueue(encoder.encode(delta));
+      const send = (obj: Record<string, string>) =>
+        controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+
+      for await (const chunk of result.fullStream) {
+        if (chunk.type === "reasoning-delta") {
+          send({ t: "r", v: chunk.text });
+        } else if (chunk.type === "text-delta") {
+          textChunks.push(chunk.text);
+          send({ t: "t", v: chunk.text });
+        }
       }
 
+      // Thinking models may put the entire answer into reasoning with
+      // empty text. Fall back to the accumulated reasoning text.
       if (textChunks.join("").trim() === "") {
         const reasoningParts = await result.reasoning;
         const full = reasoningParts.map((r) => r.text).join("").trim();
-        if (full) controller.enqueue(encoder.encode(full));
+        if (full) send({ t: "t", v: full });
       }
 
+      send({ t: "d" });
       controller.close();
     },
   });
 
   return new Response(stream, {
-    headers: { "Content-Type": "text/plain; charset=utf-8" },
+    headers: { "Content-Type": "application/x-ndjson; charset=utf-8" },
   });
 });
 

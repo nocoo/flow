@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Keyboard, Loader2, X } from "lucide-react";
+import { BrainCircuit, Keyboard, Loader2, X } from "lucide-react";
 
 interface CommittedEntry {
   id: string;
@@ -25,7 +25,7 @@ export function PinyinInput() {
   const inputRef = useRef<HTMLInputElement>(null);
   const lastSnapshotRef = useRef("");
 
-  const { prediction, isPredicting, error, predict, cancel } = usePinyin();
+  const { prediction, isPredicting, isThinking, error, predict, cancel } = usePinyin();
 
   // On every input change, send the full input to LLM
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,16 +151,23 @@ export function PinyinInput() {
       {/* Prediction display — shows live streaming result */}
       <div className="border-t bg-muted/50 px-4 py-3">
         <div className="flex items-center justify-between gap-2 min-h-8">
-          <p className="text-lg leading-snug text-foreground">
-            {prediction || (
-              <span className="text-sm text-muted-foreground">
-                {input.trim()
-                  ? "Waiting for prediction..."
-                  : "Prediction will appear here"}
-              </span>
-            )}
-          </p>
-          {isPredicting && (
+          {isThinking ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <BrainCircuit className="size-4 shrink-0 text-primary animate-pulse" />
+              <span>Thinking...</span>
+            </div>
+          ) : (
+            <p className="text-lg leading-snug text-foreground">
+              {prediction || (
+                <span className="text-sm text-muted-foreground">
+                  {input.trim()
+                    ? "Waiting for prediction..."
+                    : "Prediction will appear here"}
+                </span>
+              )}
+            </p>
+          )}
+          {isPredicting && !isThinking && (
             <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
           )}
         </div>
