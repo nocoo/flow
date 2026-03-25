@@ -1,5 +1,5 @@
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type ReasoningUIPart } from "ai";
+import { useChat, type UIMessage } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useRef, useEffect, useState, useMemo, type FormEvent } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,49 @@ const transport = new DefaultChatTransport({
   api: `${API_BASE}/api/chat`,
 });
 
-function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
-  const isStreaming = part.state !== "done";
-  const [open, setOpen] = useState(isStreaming);
+/** Aggregate all reasoning parts into a single text + streaming flag */
+function getReasoningSummary(message: UIMessage): { text: string; isStreaming: boolean } | null {
+  let text = "";
+  let hasReasoning = false;
+  let isStreaming = false;
 
-  // Auto-collapse when streaming finishes
+  for (const part of message.parts) {
+    if (part.type === "reasoning") {
+      hasReasoning = true;
+      text += part.text;
+      if (part.state !== "done") isStreaming = true;
+    }
+  }
+
+  return hasReasoning ? { text, isStreaming } : null;
+}
+
+/** Aggregate all text parts into a single string */
+function getTextContent(message: UIMessage): string {
+  let text = "";
+  for (const part of message.parts) {
+    if (part.type === "text") text += part.text;
+  }
+  return text;
+}
+
+function ReasoningBlock({ text, isStreaming, messageId }: {
+  text: string;
+  isStreaming: boolean;
+  messageId: string;
+}) {
+  const [open, setOpen] = useState(true);
+  const doneRef = useRef(false);
+
+  // Auto-collapse once when streaming finishes (only the first transition)
   useEffect(() => {
-    if (!isStreaming) setOpen(false);
-  }, [isStreaming]);
+    if (!isStreaming && !doneRef.current && text) {
+      doneRef.current = true;
+      setOpen(false);
+    }
+  }, [isStreaming, text]);
 
-  if (!part.text && !isStreaming) return null;
+  if (!text && !isStreaming) return null;
 
   return (
     <div className="my-1.5 rounded-md border border-border/60 bg-muted/40 text-xs">
@@ -43,11 +76,29 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
         )}
       </button>
       {open && (
-        <div className="border-t border-border/40 px-2.5 py-2 text-muted-foreground whitespace-pre-wrap leading-relaxed">
-          {part.text}
+        <div className="border-t border-border/40 px-2.5 py-2 text-muted-foreground whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto">
+          {text}
         </div>
       )}
     </div>
+  );
+}
+
+function AssistantContent({ message }: { message: UIMessage }) {
+  const reasoning = getReasoningSummary(message);
+  const text = getTextContent(message);
+
+  return (
+    <>
+      {reasoning && (
+        <ReasoningBlock
+          text={reasoning.text}
+          isStreaming={reasoning.isStreaming}
+          messageId={message.id}
+        />
+      )}
+      {text && <span className="whitespace-pre-wrap">{text}</span>}
+    </>
   );
 }
 
@@ -133,24 +184,17 @@ export function Chat() {
                     : "bg-muted"
                 }`}
               >
-                {message.parts.map((part, i) => {
-                  if (part.type === "reasoning") {
-                    return (
-                      <ReasoningBlock
-                        key={`${message.id}-${i}`}
-                        part={part}
-                      />
-                    );
-                  }
-                  if (part.type === "text") {
-                    return (
-                      <span key={`${message.id}-${i}`} className="whitespace-pre-wrap">
+                {message.role === "assistant" ? (
+                  <AssistantContent message={message} />
+                ) : (
+                  message.parts.map((part, i) =>
+                    part.type === "text" ? (
+                      <span key={i} className="whitespace-pre-wrap">
                         {part.text}
                       </span>
-                    );
-                  }
-                  return null;
-                })}
+                    ) : null
+                  )
+                )}
               </div>
             </div>
           ))}
