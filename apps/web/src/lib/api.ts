@@ -31,3 +31,10 @@ export async function saveSettings(data: DeepPartial<Settings>): Promise<Setting
   if (!res.ok) throw new Error(`Failed to save settings: ${res.status}`);
   return res.json();
 }
+
+export async function fetchModels(provider: "local" | "cloud"): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/api/models?provider=${provider}`);
+  if (!res.ok) return [];
+  const body = await res.json();
+  return body.models || [];
+}

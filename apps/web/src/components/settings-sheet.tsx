@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSettings } from "@/hooks/use-settings";
 import {
   Sheet,
@@ -11,8 +11,97 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Settings } from "lucide-react";
-import type { Settings as SettingsType } from "@/lib/api";
+import { Loader2, RefreshCw, Settings } from "lucide-react";
+import { fetchModels, type Settings as SettingsType } from "@/lib/api";
+
+/** Dropdown that fetches available models from the provider */
+function ModelSelect({
+  provider,
+  value,
+  onChange,
+  baseURL,
+}: {
+  provider: "local" | "cloud";
+  value: string;
+  onChange: (v: string) => void;
+  baseURL: string;
+}) {
+  const [models, setModels] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadModels = useCallback(async () => {
+    if (!baseURL) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await fetchModels(provider);
+      setModels(list);
+      if (list.length === 0) setError("No models found");
+    } catch {
+      setError("Failed to load models");
+    } finally {
+      setLoading(false);
+    }
+  }, [provider, baseURL]);
+
+  // Auto-load models on mount and when baseURL changes
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <select
+          value={models.includes(value) ? value : "__custom__"}
+          onChange={(e) => {
+            if (e.target.value !== "__custom__") {
+              onChange(e.target.value);
+            }
+          }}
+          disabled={loading || models.length === 0}
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-xs font-mono shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {models.length === 0 && !loading && (
+            <option value="__custom__">
+              {error || "Enter model ID manually"}
+            </option>
+          )}
+          {models.length > 0 && !models.includes(value) && (
+            <option value="__custom__">{value || "Select a model..."}</option>
+          )}
+          {models.map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="shrink-0 size-9"
+          onClick={loadModels}
+          disabled={loading}
+          title="Refresh models"
+        >
+          {loading ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <RefreshCw className="size-3.5" />
+          )}
+        </Button>
+      </div>
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Or type model ID..."
+        className="font-mono text-xs"
+      />
+    </div>
+  );
+}
 
 interface SettingsSheetProps {
   open: boolean;
@@ -139,13 +228,12 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="local-model">Model ID</Label>
-                <Input
-                  id="local-model"
+                <Label>Model ID</Label>
+                <ModelSelect
+                  provider="local"
                   value={form.local.modelId}
-                  onChange={(e) => updateLocal("modelId", e.target.value)}
-                  placeholder="Qwen3.5-2B-6bit"
-                  className="font-mono text-xs"
+                  onChange={(v) => updateLocal("modelId", v)}
+                  baseURL={form.local.baseURL}
                 />
               </div>
             </div>
@@ -188,13 +276,12 @@ export function SettingsSheet({ open, onOpenChange }: SettingsSheetProps) {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cloud-model">Model ID</Label>
-                <Input
-                  id="cloud-model"
+                <Label>Model ID</Label>
+                <ModelSelect
+                  provider="cloud"
                   value={form.cloud.modelId}
-                  onChange={(e) => updateCloud("modelId", e.target.value)}
-                  placeholder="gpt-4o-mini"
-                  className="font-mono text-xs"
+                  onChange={(v) => updateCloud("modelId", v)}
+                  baseURL={form.cloud.baseURL}
                 />
               </div>
             </div>
