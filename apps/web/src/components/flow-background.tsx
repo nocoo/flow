@@ -20,12 +20,12 @@ import { createNoise2D } from "simplex-noise";
  */
 
 const PARTICLE_COUNT = 1200;
-const MAX_LIFE = 200;          // frames before a particle resets
-const MIN_LIFE = 80;
+const MAX_LIFE = 400;          // frames before a particle resets
+const MIN_LIFE = 150;
 const SPEED = 0.8;
 const NOISE_SCALE = 0.0025;
 const NOISE_STRENGTH = 0.6;   // how much noise bends the base angle
-const FADE_ALPHA = 0.025;     // per-frame white overlay → trails decay
+const FADE_ALPHA = 0.008;     // per-frame white overlay → lower = longer trails
 
 const PHI = (1 + Math.sqrt(5)) / 2; // golden ratio
 
@@ -147,7 +147,7 @@ export function FlowBackground() {
         } else {
           alpha = 1;
         }
-        alpha *= 0.25; // keep overall subtlety
+        alpha *= 0.45; // stroke visibility
 
         ctx.strokeStyle = `rgba(${p.shade},${p.shade},${p.shade},${alpha})`;
         ctx.lineWidth = 1;
