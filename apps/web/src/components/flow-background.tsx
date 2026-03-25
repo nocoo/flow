@@ -2,49 +2,76 @@ import { useRef, useEffect } from "react";
 import { createNoise2D } from "simplex-noise";
 
 /**
- * Ukiyo-e wave-inspired flow field background.
+ * Moiré-pattern flow field background.
  *
- * Multiple layers of particles at different speeds and shades create
- * a rolling wave effect reminiscent of Hokusai's "The Great Wave".
- * Particles flow horizontally with vertical undulation driven by
- * layered simplex noise, producing black/gray/white wave bands.
+ * Particles travel in all directions, each seeded with a deterministic
+ * angle derived from a modular hash of its index. The directions aren't
+ * random — they follow (index * PHI) % 1 mapped to a full circle, so
+ * the golden-ratio spacing guarantees even angular distribution while
+ * being perfectly repeatable.
+ *
+ * Simplex noise bends each path slightly, and because hundreds of
+ * near-parallel lines overlay at slightly different offsets, the
+ * accumulated strokes produce emergent moiré / interference patterns
+ * that evolve over time.
+ *
+ * Each particle has a limited lifespan; when it dies it fades out,
+ * preventing the canvas from getting muddy.
  */
 
-interface WaveLayer {
-  count: number;
-  speed: number;
-  shade: number;       // 0 = black, 255 = white
-  alpha: number;
-  lineWidth: number;
-  noiseScale: number;
-  amplitude: number;   // vertical wave strength
-}
+const PARTICLE_COUNT = 1200;
+const MAX_LIFE = 200;          // frames before a particle resets
+const MIN_LIFE = 80;
+const SPEED = 0.8;
+const NOISE_SCALE = 0.0025;
+const NOISE_STRENGTH = 0.6;   // how much noise bends the base angle
+const FADE_ALPHA = 0.025;     // per-frame white overlay → trails decay
 
-const LAYERS: WaveLayer[] = [
-  // Deep background — slow, light gray, wide strokes
-  { count: 300, speed: 0.3, shade: 210, alpha: 0.25, lineWidth: 2, noiseScale: 0.002, amplitude: 1.2 },
-  // Mid layer — medium speed, medium gray
-  { count: 400, speed: 0.6, shade: 150, alpha: 0.3, lineWidth: 1.5, noiseScale: 0.003, amplitude: 1.8 },
-  // Wave crests — faster, dark, thin strokes
-  { count: 500, speed: 1.0, shade: 80, alpha: 0.35, lineWidth: 1, noiseScale: 0.004, amplitude: 2.5 },
-  // Foam / spray — fastest, near-black accents
-  { count: 200, speed: 1.4, shade: 30, alpha: 0.2, lineWidth: 0.8, noiseScale: 0.006, amplitude: 3.0 },
-];
-
-const FADE_ALPHA = 0.015;
+const PHI = (1 + Math.sqrt(5)) / 2; // golden ratio
 
 interface Particle {
   x: number;
   y: number;
   prevX: number;
   prevY: number;
-  layer: number;
+  baseAngle: number;  // deterministic direction from modular hash
+  life: number;       // remaining frames
+  maxLife: number;
+  shade: number;      // 0–255
+  seed: number;       // unique offset for noise sampling
 }
 
-function createParticle(w: number, h: number, layer: number): Particle {
+function createParticle(w: number, h: number, index: number): Particle {
   const x = Math.random() * w;
   const y = Math.random() * h;
-  return { x, y, prevX: x, prevY: y, layer };
+
+  // Golden-ratio angular distribution → even spread, not random
+  const baseAngle = ((index * PHI) % 1) * Math.PI * 2;
+
+  // Shade from modular hash — creates bands of black / gray / white
+  // (index * 137) % 256 is a classic low-discrepancy sequence
+  const shade = (index * 137) % 256;
+
+  const maxLife = MIN_LIFE + Math.floor(((index * 89) % (MAX_LIFE - MIN_LIFE)));
+
+  return {
+    x, y,
+    prevX: x,
+    prevY: y,
+    baseAngle,
+    life: Math.floor(Math.random() * maxLife), // stagger initial deaths
+    maxLife,
+    shade,
+    seed: index * 0.1,
+  };
+}
+
+function resetParticle(p: Particle, w: number, h: number) {
+  p.x = Math.random() * w;
+  p.y = Math.random() * h;
+  p.prevX = p.x;
+  p.prevY = p.y;
+  p.life = p.maxLife;
 }
 
 export function FlowBackground() {
@@ -69,12 +96,9 @@ export function FlowBackground() {
 
       const w = window.innerWidth;
       const h = window.innerHeight;
-      particles = [];
-      for (let i = 0; i < LAYERS.length; i++) {
-        for (let j = 0; j < LAYERS[i].count; j++) {
-          particles.push(createParticle(w, h, i));
-        }
-      }
+      particles = Array.from({ length: PARTICLE_COUNT }, (_, i) =>
+        createParticle(w, h, i),
+      );
     };
 
     resize();
@@ -86,48 +110,51 @@ export function FlowBackground() {
       const w = window.innerWidth;
       const h = window.innerHeight;
 
-      // Fade — white overlay for trailing wave effect
+      // Fade previous frame → trails decay to white over time
       ctx.fillStyle = `rgba(255,255,255,${FADE_ALPHA})`;
       ctx.fillRect(0, 0, w, h);
 
-      t += 0.0003;
+      t += 0.0004;
 
       for (const p of particles) {
-        const layer = LAYERS[p.layer];
+        p.life--;
+
+        if (p.life <= 0 || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) {
+          resetParticle(p, w, h);
+          continue;
+        }
 
         p.prevX = p.x;
         p.prevY = p.y;
 
-        // Horizontal flow + vertical wave undulation from noise
+        // Noise bends the deterministic base angle
         const n = noise2D(
-          p.x * layer.noiseScale + t,
-          p.y * layer.noiseScale,
+          p.x * NOISE_SCALE + p.seed,
+          p.y * NOISE_SCALE + t,
         );
+        const angle = p.baseAngle + n * Math.PI * NOISE_STRENGTH;
 
-        // Primary flow is rightward; noise modulates vertical position
-        // creating wave-like undulation bands
-        p.x += layer.speed;
-        p.y += n * layer.amplitude;
+        p.x += Math.cos(angle) * SPEED;
+        p.y += Math.sin(angle) * SPEED;
 
-        // Draw trail
-        ctx.strokeStyle = `rgba(${layer.shade},${layer.shade},${layer.shade},${layer.alpha})`;
-        ctx.lineWidth = layer.lineWidth;
+        // Fade in/out over lifespan: ramp up first 20%, ramp down last 20%
+        const lifeRatio = p.life / p.maxLife;
+        let alpha: number;
+        if (lifeRatio > 0.8) {
+          alpha = (1 - lifeRatio) / 0.2; // fade in
+        } else if (lifeRatio < 0.2) {
+          alpha = lifeRatio / 0.2;        // fade out
+        } else {
+          alpha = 1;
+        }
+        alpha *= 0.25; // keep overall subtlety
+
+        ctx.strokeStyle = `rgba(${p.shade},${p.shade},${p.shade},${alpha})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(p.prevX, p.prevY);
         ctx.lineTo(p.x, p.y);
         ctx.stroke();
-
-        // Wrap around horizontally (continuous wave), reset if out vertically
-        if (p.x > w) {
-          p.x = 0;
-          p.prevX = 0;
-        }
-        if (p.y < -10 || p.y > h + 10) {
-          p.x = Math.random() * w * 0.3; // re-enter from left side
-          p.y = Math.random() * h;
-          p.prevX = p.x;
-          p.prevY = p.y;
-        }
       }
 
       animId = requestAnimationFrame(draw);
