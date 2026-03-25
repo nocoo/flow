@@ -181,32 +181,27 @@ export function PinyinInput() {
       )}
 
       {/* Input area */}
-      <div className="border-t px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Input
-            ref={inputRef}
-            value={input}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            placeholder="Type pinyin..."
-            className="font-mono"
-            autoFocus
-          />
-          {(entries.length > 0 || draft) && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={clearAll}
-              title="Clear all"
-            >
-              <X className="size-4" />
-            </Button>
-          )}
-        </div>
-        <p className="mt-1.5 text-center text-xs text-muted-foreground">
-          Space / Enter to commit
-        </p>
+      <div className="flex items-center gap-2 border-t px-4 py-3">
+        <Input
+          ref={inputRef}
+          value={input}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Type pinyin... (Space/Enter to commit)"
+          className="font-mono"
+          autoFocus
+        />
+        {(entries.length > 0 || draft) && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={clearAll}
+            title="Clear all"
+          >
+            <X className="size-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
