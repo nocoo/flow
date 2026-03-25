@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Chat } from "@/components/chat";
 import { PinyinInput } from "@/components/pinyin-input";
+import { FlowBackground } from "@/components/flow-background";
 import { SettingsSheet } from "@/components/settings-sheet";
 import { SettingsProvider } from "@/hooks/use-settings";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,8 @@ export default function App() {
 
   return (
     <SettingsProvider>
-      <div className="relative flex min-h-svh items-center justify-center gap-6 bg-background p-4">
+      <FlowBackground />
+      <div className="relative flex min-h-svh items-center justify-center gap-6 p-4">
         <Button
           variant="ghost"
           size="icon"
