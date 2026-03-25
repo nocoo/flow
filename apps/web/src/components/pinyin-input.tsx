@@ -188,7 +188,7 @@ export function PinyinInput() {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder="Type pinyin... (Space/Enter to commit)"
-          className="font-mono"
+          className="h-10 font-mono"
           autoFocus
         />
         {(entries.length > 0 || draft) && (
