@@ -178,7 +178,7 @@ export function Chat() {
       <ScrollArea className="flex-1 px-6" ref={scrollRef}>
         <div className="space-y-6 py-6">
           {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground h-[calc(80svh-8rem)]">
               <Bot className="size-10" />
               <p className="text-sm">Send a message to start chatting</p>
             </div>

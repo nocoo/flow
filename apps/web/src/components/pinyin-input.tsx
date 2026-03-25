@@ -113,7 +113,7 @@ export function PinyinInput() {
       <ScrollArea className="flex-1 px-4" ref={scrollRef}>
         <div className="space-y-3 py-4">
           {entries.length === 0 && !draft && !prediction && (
-            <div className="flex flex-col items-center justify-center gap-2 py-20 text-muted-foreground">
+            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground h-[calc(80svh-12rem)]">
               <Keyboard className="size-10" />
               <p className="text-sm">Type pinyin to start</p>
               <p className="text-xs">Space or Enter to commit</p>
