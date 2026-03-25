@@ -11,7 +11,7 @@ export default function App() {
 
   return (
     <SettingsProvider>
-      <div className="relative flex min-h-svh items-center justify-center gap-6 bg-background p-4">
+      <div className="relative flex min-h-svh items-end justify-center gap-6 bg-background p-4">
         <Button
           variant="ghost"
           size="icon"
