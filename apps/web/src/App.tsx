@@ -4,7 +4,6 @@ import { PinyinInput } from "@/components/pinyin-input";
 import { PolishInput } from "@/components/polish-input";
 import { SettingsPanel } from "@/components/settings-panel";
 import { FlowBackground } from "@/components/flow-background";
-import { FlowLogo } from "@/components/flow-logo";
 import { SettingsProvider } from "@/hooks/use-settings";
 
 export default function App() {
@@ -13,7 +12,6 @@ export default function App() {
   return (
     <SettingsProvider>
       <FlowBackground />
-      <FlowLogo />
       <div className="relative flex min-h-svh items-center justify-center gap-6 p-4">
         <Chat />
         <PinyinInput />
