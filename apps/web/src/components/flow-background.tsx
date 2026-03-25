@@ -1,24 +1,50 @@
 import { useRef, useEffect } from "react";
 import { createNoise2D } from "simplex-noise";
 
-const PARTICLE_COUNT = 800;
-const NOISE_SCALE = 0.003;
-const SPEED = 0.4;
-const PARTICLE_ALPHA = 0.12;
-const FADE_ALPHA = 0.03;
-const PARTICLE_COLOR = "150,150,150";
+/**
+ * Ukiyo-e wave-inspired flow field background.
+ *
+ * Multiple layers of particles at different speeds and shades create
+ * a rolling wave effect reminiscent of Hokusai's "The Great Wave".
+ * Particles flow horizontally with vertical undulation driven by
+ * layered simplex noise, producing black/gray/white wave bands.
+ */
+
+interface WaveLayer {
+  count: number;
+  speed: number;
+  shade: number;       // 0 = black, 255 = white
+  alpha: number;
+  lineWidth: number;
+  noiseScale: number;
+  amplitude: number;   // vertical wave strength
+}
+
+const LAYERS: WaveLayer[] = [
+  // Deep background — slow, light gray, wide strokes
+  { count: 300, speed: 0.3, shade: 210, alpha: 0.25, lineWidth: 2, noiseScale: 0.002, amplitude: 1.2 },
+  // Mid layer — medium speed, medium gray
+  { count: 400, speed: 0.6, shade: 150, alpha: 0.3, lineWidth: 1.5, noiseScale: 0.003, amplitude: 1.8 },
+  // Wave crests — faster, dark, thin strokes
+  { count: 500, speed: 1.0, shade: 80, alpha: 0.35, lineWidth: 1, noiseScale: 0.004, amplitude: 2.5 },
+  // Foam / spray — fastest, near-black accents
+  { count: 200, speed: 1.4, shade: 30, alpha: 0.2, lineWidth: 0.8, noiseScale: 0.006, amplitude: 3.0 },
+];
+
+const FADE_ALPHA = 0.015;
 
 interface Particle {
   x: number;
   y: number;
   prevX: number;
   prevY: number;
+  layer: number;
 }
 
-function createParticle(w: number, h: number): Particle {
+function createParticle(w: number, h: number, layer: number): Particle {
   const x = Math.random() * w;
   const y = Math.random() * h;
-  return { x, y, prevX: x, prevY: y };
+  return { x, y, prevX: x, prevY: y, layer };
 }
 
 export function FlowBackground() {
@@ -41,59 +67,66 @@ export function FlowBackground() {
       canvas.style.height = `${window.innerHeight}px`;
       ctx.scale(dpr, dpr);
 
-      // Re-initialize particles on resize
       const w = window.innerWidth;
       const h = window.innerHeight;
-      particles = Array.from({ length: PARTICLE_COUNT }, () =>
-        createParticle(w, h),
-      );
+      particles = [];
+      for (let i = 0; i < LAYERS.length; i++) {
+        for (let j = 0; j < LAYERS[i].count; j++) {
+          particles.push(createParticle(w, h, i));
+        }
+      }
     };
 
     resize();
     window.addEventListener("resize", resize);
 
-    // Slowly evolve the flow field over time
-    let zOffset = 0;
+    let t = 0;
 
     const draw = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
 
-      // Fade previous frame — creates trailing effect
+      // Fade — white overlay for trailing wave effect
       ctx.fillStyle = `rgba(255,255,255,${FADE_ALPHA})`;
       ctx.fillRect(0, 0, w, h);
 
-      ctx.strokeStyle = `rgba(${PARTICLE_COLOR},${PARTICLE_ALPHA})`;
-      ctx.lineWidth = 1;
-
-      zOffset += 0.0002;
+      t += 0.0003;
 
       for (const p of particles) {
+        const layer = LAYERS[p.layer];
+
         p.prevX = p.x;
         p.prevY = p.y;
 
-        // Sample flow field angle from noise
-        const angle =
-          noise2D(p.x * NOISE_SCALE, p.y * NOISE_SCALE + zOffset) *
-          Math.PI *
-          2;
+        // Horizontal flow + vertical wave undulation from noise
+        const n = noise2D(
+          p.x * layer.noiseScale + t,
+          p.y * layer.noiseScale,
+        );
 
-        p.x += Math.cos(angle) * SPEED;
-        p.y += Math.sin(angle) * SPEED;
+        // Primary flow is rightward; noise modulates vertical position
+        // creating wave-like undulation bands
+        p.x += layer.speed;
+        p.y += n * layer.amplitude;
 
-        // Draw trail segment
+        // Draw trail
+        ctx.strokeStyle = `rgba(${layer.shade},${layer.shade},${layer.shade},${layer.alpha})`;
+        ctx.lineWidth = layer.lineWidth;
         ctx.beginPath();
         ctx.moveTo(p.prevX, p.prevY);
         ctx.lineTo(p.x, p.y);
         ctx.stroke();
 
-        // Reset if out of bounds
-        if (p.x < 0 || p.x > w || p.y < 0 || p.y > h) {
-          const np = createParticle(w, h);
-          p.x = np.x;
-          p.y = np.y;
-          p.prevX = np.prevX;
-          p.prevY = np.prevY;
+        // Wrap around horizontally (continuous wave), reset if out vertically
+        if (p.x > w) {
+          p.x = 0;
+          p.prevX = 0;
+        }
+        if (p.y < -10 || p.y > h + 10) {
+          p.x = Math.random() * w * 0.3; // re-enter from left side
+          p.y = Math.random() * h;
+          p.prevX = p.x;
+          p.prevY = p.y;
         }
       }
 
