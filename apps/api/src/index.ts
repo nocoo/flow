@@ -167,7 +167,7 @@ app.post("/api/polish", async (c) => {
 });
 
 export default {
-  port: 7045,
+  port: 7030,
   idleTimeout: 120,
   fetch: app.fetch,
 };

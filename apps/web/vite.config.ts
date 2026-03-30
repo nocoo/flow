@@ -7,7 +7,7 @@ import path from "path";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 7044,
+    port: 7029,
     allowedHosts: ["flow.dev.hexly.ai"],
   },
   resolve: {

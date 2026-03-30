@@ -101,7 +101,7 @@ flow/
 git clone https://github.com/nocoo/flow.git
 cd flow
 bun install
-bun run dev        # 同时启动 API (7045) 和 Web (7044)
+bun run dev        # 同时启动 API (7030) 和 Web (7029)
 ```
 
 ### 常用命令
@@ -109,8 +109,8 @@ bun run dev        # 同时启动 API (7045) 和 Web (7044)
 | 命令 | 说明 |
 |------|------|
 | `bun run dev` | 同时启动 API 和 Web 开发服务器 |
-| `bun run dev:api` | 仅启动 API 服务器 (端口 7045) |
-| `bun run dev:web` | 仅启动 Web 开发服务器 (端口 7044) |
+| `bun run dev:api` | 仅启动 API 服务器 (端口 7030) |
+| `bun run dev:web` | 仅启动 Web 开发服务器 (端口 7029) |
 | `bun test` | 运行测试 |
 
 ## 测试
