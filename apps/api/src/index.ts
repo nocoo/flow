@@ -1,6 +1,6 @@
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { streamText, UIMessage, convertToModelMessages } from "ai";
 import { segmentPinyinWithSpans } from "./pinyin-segmenter";
 import { getActiveProvider } from "./provider";
 import { settingsRouter } from "./routes/settings";
@@ -50,39 +50,42 @@ const POLISH_SYSTEM_PROMPT = `你是一个中文文本润色与格式化引擎�
 // ---------------------------------------------------------------------------
 
 function streamNdjsonResponse(result: ReturnType<typeof streamText>): Response {
-  const encoder = new TextEncoder();
-  const textChunks: string[] = [];
+	const encoder = new TextEncoder();
+	const textChunks: string[] = [];
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const send = (obj: Record<string, string>) =>
-        controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+	const stream = new ReadableStream({
+		async start(controller) {
+			const send = (obj: Record<string, string>) =>
+				controller.enqueue(encoder.encode(`${JSON.stringify(obj)}\n`));
 
-      for await (const chunk of result.fullStream) {
-        if (chunk.type === "reasoning-delta") {
-          send({ t: "r", v: chunk.text });
-        } else if (chunk.type === "text-delta") {
-          textChunks.push(chunk.text);
-          send({ t: "t", v: chunk.text });
-        }
-      }
+			for await (const chunk of result.fullStream) {
+				if (chunk.type === "reasoning-delta") {
+					send({ t: "r", v: chunk.text });
+				} else if (chunk.type === "text-delta") {
+					textChunks.push(chunk.text);
+					send({ t: "t", v: chunk.text });
+				}
+			}
 
-      // Thinking models may put the entire answer into reasoning with
-      // empty text. Fall back to the accumulated reasoning text.
-      if (textChunks.join("").trim() === "") {
-        const reasoningParts = await result.reasoning;
-        const full = reasoningParts.map((r) => r.text).join("").trim();
-        if (full) send({ t: "t", v: full });
-      }
+			// Thinking models may put the entire answer into reasoning with
+			// empty text. Fall back to the accumulated reasoning text.
+			if (textChunks.join("").trim() === "") {
+				const reasoningParts = await result.reasoning;
+				const full = reasoningParts
+					.map((r) => r.text)
+					.join("")
+					.trim();
+				if (full) send({ t: "t", v: full });
+			}
 
-      send({ t: "d" });
-      controller.close();
-    },
-  });
+			send({ t: "d" });
+			controller.close();
+		},
+	});
 
-  return new Response(stream, {
-    headers: { "Content-Type": "application/x-ndjson; charset=utf-8" },
-  });
+	return new Response(stream, {
+		headers: { "Content-Type": "application/x-ndjson; charset=utf-8" },
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -98,76 +101,78 @@ app.get("/", (c) => c.json({ status: "ok", name: "flow-api" }));
 app.route("/", settingsRouter);
 
 app.post("/api/chat", async (c) => {
-  const {
-    messages,
-    reasoning = true,
-  }: { messages: UIMessage[]; reasoning?: boolean } = await c.req.json();
-  const { model } = getActiveProvider();
+	const {
+		messages,
+		reasoning = true,
+	}: { messages: UIMessage[]; reasoning?: boolean } = await c.req.json();
+	const { model } = getActiveProvider();
 
-  const result = streamText({
-    model,
-    messages: await convertToModelMessages(messages),
-  });
+	const result = streamText({
+		model,
+		messages: await convertToModelMessages(messages),
+	});
 
-  return result.toUIMessageStreamResponse({ sendReasoning: reasoning });
+	return result.toUIMessageStreamResponse({ sendReasoning: reasoning });
 });
 
 app.post("/api/pinyin", async (c) => {
-  const { text, context }: { text: string; context?: string[] } = await c.req.json();
+	const { text, context }: { text: string; context?: string[] } =
+		await c.req.json();
 
-  if (!text?.trim()) {
-    return c.json({ result: "" });
-  }
+	if (!text?.trim()) {
+		return c.json({ result: "" });
+	}
 
-  const { model } = getActiveProvider();
-  const { segmented } = segmentPinyinWithSpans(text);
+	const { model } = getActiveProvider();
+	const { segmented } = segmentPinyinWithSpans(text);
 
-  let userPrompt = `raw: ${text}\nsegmented: ${segmented}`;
+	let userPrompt = `raw: ${text}\nsegmented: ${segmented}`;
 
-  if (context && context.length > 0) {
-    const recent = context.slice(-3).join("\n");
-    userPrompt += `\n上文: ${recent}`;
-  }
+	if (context && context.length > 0) {
+		const recent = context.slice(-3).join("\n");
+		userPrompt += `\n上文: ${recent}`;
+	}
 
-  const result = streamText({
-    model,
-    system: PINYIN_SYSTEM_PROMPT,
-    prompt: userPrompt,
-    maxTokens: 200,
-    temperature: 0,
-  });
+	const result = streamText({
+		model,
+		system: PINYIN_SYSTEM_PROMPT,
+		prompt: userPrompt,
+		maxOutputTokens: 200,
+		temperature: 0,
+	});
 
-  return streamNdjsonResponse(result);
+	return streamNdjsonResponse(result);
 });
 
 app.post("/api/polish", async (c) => {
-  const { text, context }: { text: string; context?: string[] } = await c.req.json();
+	const { text, context }: { text: string; context?: string[] } =
+		await c.req.json();
 
-  if (!text?.trim()) {
-    return c.json({ result: "" });
-  }
+	if (!text?.trim()) {
+		return c.json({ result: "" });
+	}
 
-  const { model } = getActiveProvider();
+	const { model } = getActiveProvider();
 
-  let userPrompt = text;
-  if (context && context.length > 0) {
-    const recent = context.slice(-3).join("\n");
-    userPrompt = `上文:\n${recent}\n\n需要润色的文本:\n${text}`;
-  }
+	let userPrompt = text;
+	if (context && context.length > 0) {
+		const recent = context.slice(-3).join("\n");
+		userPrompt = `上文:\n${recent}\n\n需要润色的文本:\n${text}`;
+	}
 
-  const result = streamText({
-    model,
-    system: POLISH_SYSTEM_PROMPT,
-    prompt: userPrompt,
-    maxTokens: 500,
-    temperature: 0,
-  });
+	const result = streamText({
+		model,
+		system: POLISH_SYSTEM_PROMPT,
+		prompt: userPrompt,
+		maxOutputTokens: 500,
+		temperature: 0,
+	});
 
-  return streamNdjsonResponse(result);
+	return streamNdjsonResponse(result);
 });
 
 export default {
-  port: 7030,
-  idleTimeout: 120,
-  fetch: app.fetch,
+	port: 7030,
+	idleTimeout: 120,
+	fetch: app.fetch,
 };

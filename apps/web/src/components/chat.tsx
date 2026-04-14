@@ -9,12 +9,12 @@ import { SendHorizonal, Bot, User, Loader2, ChevronRight, BrainCircuit } from "l
 import { useSettings } from "@/hooks/use-settings";
 import { API_BASE } from "@/lib/api";
 
-/** Shared mutable ref so the static transport can read the latest reasoning toggle */
-let _reasoningEnabled = true;
+/** Mutable ref so the static transport can read the latest reasoning toggle */
+const _reasoningRef = { current: true };
 
 const transport = new DefaultChatTransport({
   api: `${API_BASE}/api/chat`,
-  body: () => ({ reasoning: _reasoningEnabled }),
+  body: () => ({ reasoning: _reasoningRef.current }),
 });
 
 /** Aggregate all reasoning parts into a single text + streaming flag */
@@ -43,19 +43,19 @@ function getTextContent(message: UIMessage): string {
   return text;
 }
 
-function ReasoningBlock({ text, isStreaming, messageId }: {
+function ReasoningBlock({ text, isStreaming }: {
   text: string;
   isStreaming: boolean;
-  messageId: string;
 }) {
   const [open, setOpen] = useState(true);
   const doneRef = useRef(false);
 
-  // Auto-collapse once when streaming finishes (only the first transition)
+  // Auto-collapse once when streaming finishes
   useEffect(() => {
     if (!isStreaming && !doneRef.current && text) {
       doneRef.current = true;
-      setOpen(false);
+      // Defer state update to avoid setState-in-effect warning
+      requestAnimationFrame(() => setOpen(false));
     }
   }, [isStreaming, text]);
 
@@ -98,7 +98,6 @@ function AssistantContent({ message, showReasoning }: { message: UIMessage; show
         <ReasoningBlock
           text={reasoning.text}
           isStreaming={reasoning.isStreaming}
-          messageId={message.id}
         />
       )}
       {text && <span className="whitespace-pre-wrap">{text}</span>}
@@ -113,7 +112,9 @@ export function Chat() {
   const { settings } = useSettings();
 
   // Keep module-level ref in sync so transport body reads the latest value
-  _reasoningEnabled = reasoning;
+  useEffect(() => {
+    _reasoningRef.current = reasoning;
+  }, [reasoning]);
 
   const providerLabel = useMemo(() => {
     if (!settings) return "Loading...";

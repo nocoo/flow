@@ -5,6 +5,13 @@
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "dev:web": "bun run --filter web dev",
-    "dev:api": "bun run --filter api dev"
+    "dev:api": "bun run --filter api dev",
+    "lint": "bun run --filter '*' lint",
+    "test": "bun run --filter '*' test",
+    "typecheck": "bun run --filter '*' typecheck"
+  },
+  "overrides": {
+    "picomatch": "^4.0.4",
+    "vite": "^8.0.5"
   }
 }
