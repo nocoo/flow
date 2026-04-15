@@ -1,17 +1,24 @@
 {
   "name": "flow",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run --filter '*' dev",
     "dev:web": "bun run --filter web dev",
     "dev:api": "bun run --filter api dev",
     "lint": "bun run --filter '*' lint",
     "test": "bun run --filter '*' test",
-    "typecheck": "bun run --filter '*' typecheck"
+    "typecheck": "bun run --filter '*' typecheck",
+    "prepare": "husky"
   },
   "overrides": {
     "picomatch": "^4.0.4",
     "vite": "^8.0.5"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }
