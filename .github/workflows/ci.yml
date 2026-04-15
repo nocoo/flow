@@ -11,6 +11,6 @@ jobs:
     uses: nocoo/base-ci/.github/workflows/bun-quality.yml@v2026
     with:
       test-command: "bun run test"
-      enable-security: "false"
+      enable-security: "true"
       enable-l2: "false"
     secrets: inherit
