@@ -12,5 +12,6 @@ jobs:
     with:
       test-command: "bun run test"
       enable-security: "true"
+      osv-config: "osv-scanner.toml"
       enable-l2: "false"
     secrets: inherit
