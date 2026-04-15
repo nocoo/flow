@@ -1,0 +1,6 @@
+[[PackageOverrides]]
+# Add known false positives below
+# name = "example-package"
+# ecosystem = "npm"
+# ignore = true
+# reason = "false positive"
