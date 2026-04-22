@@ -16,11 +16,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await fetchSettings();
+const refresh = useCallback(async () => {
+ try {
+     await Promise.resolve();
+    setLoading(true);
+    setError(null);
+   const data = await fetchSettings();
       setSettings(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load settings");
@@ -29,10 +30,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const save = useCallback(async (data: DeepPartial<Settings>) => {
-    try {
-      setError(null);
-      const updated = await saveSettings(data);
+const save = useCallback(async (data: DeepPartial<Settings>) => {
+ try {
+     await Promise.resolve();
+    setError(null);
+   const updated = await saveSettings(data);
       setSettings(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save settings");
@@ -41,8 +43,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    fetchSettings().then((data) => {
+      setSettings(data);
+    }).catch((err) => {
+      setError(err instanceof Error ? err.message : "Failed to load settings");
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, loading, error, save, refresh }}>

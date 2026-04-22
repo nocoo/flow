@@ -23,25 +23,26 @@ function ModelSelect({
   const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const loadModels = useCallback(async () => {
-    if (!baseURL) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const list = await fetchModels(provider);
-      setModels(list);
-      if (list.length === 0) setError("No models found");
-    } catch {
-      setError("Failed to load models");
-    } finally {
-      setLoading(false);
-    }
-  }, [provider, baseURL]);
+  const loadModels = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
-    loadModels();
-  }, [loadModels]);
+    if (!baseURL) return;
+    let cancelled = false;
+    fetchModels(provider).then((list) => {
+      if (cancelled) return;
+      setModels(list);
+      if (list.length === 0) setError("No models found");
+    }).catch(() => {
+      if (!cancelled) setError("Failed to load models");
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [provider, baseURL, refreshKey]);
 
   return (
     <div className="space-y-1.5">
@@ -108,14 +109,16 @@ export function SettingsPanel({ open, onToggle }: SettingsPanelProps) {
   const [showLocalKey, setShowLocalKey] = useState(false);
   const [showCloudKey, setShowCloudKey] = useState(false);
 
-  // Sync form state when settings load or panel opens
-  useEffect(() => {
-    if (settings && open) {
-      setForm(structuredClone(settings));
-      setShowLocalKey(false);
-      setShowCloudKey(false);
-    }
-  }, [settings, open]);
+ // Sync form state when settings load or panel opens
+ useEffect(() => {
+   if (settings && open) {
+      queueMicrotask(() => {
+        setForm(structuredClone(settings));
+        setShowLocalKey(false);
+        setShowCloudKey(false);
+      });
+   }
+ }, [settings, open]);
 
   const handleSave = async () => {
     if (!form) return;

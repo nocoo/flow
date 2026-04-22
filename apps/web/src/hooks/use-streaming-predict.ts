@@ -50,9 +50,11 @@ export function useStreamingPredict(
 
   // Keep stable references to avoid re-creating predict on every render
   const apiUrlRef = useRef(apiUrl);
-  apiUrlRef.current = apiUrl;
   const buildBodyRef = useRef(buildBody);
-  buildBodyRef.current = buildBody;
+  useEffect(() => {
+    apiUrlRef.current = apiUrl;
+    buildBodyRef.current = buildBody;
+  });
 
   const predict = useCallback(
     (text: string, context: string[]) => {
