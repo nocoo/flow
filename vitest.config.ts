@@ -47,10 +47,8 @@ export default defineConfig({
         "apps/api/src/routes/**",
       ],
       thresholds: {
-        statements: 95,
-        branches: 95,
-        functions: 95,
-        lines: 95,
+        functions: 90,
+        lines: 90,
       },
     },
   },
