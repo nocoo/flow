@@ -10,7 +10,7 @@ jobs:
   quality:
     uses: nocoo/base-ci/.github/workflows/bun-quality.yml@v2026.1
     with:
-      test-command: "bun run test"
+      test-command: "bun run test:coverage"
       enable-security: "true"
       osv-config: "osv-scanner.toml"
       enable-l2: "false"
