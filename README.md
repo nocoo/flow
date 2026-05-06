@@ -85,7 +85,7 @@ flow/
 | 前端框架 | [React](https://react.dev) 19 + [Vite](https://vite.dev) 8 |
 | UI 组件 | [shadcn/ui](https://ui.shadcn.com) + [Radix](https://www.radix-ui.com) + [Tailwind CSS](https://tailwindcss.com) 4 |
 | 数据库 | [bun:sqlite](https://bun.sh/docs/api/sqlite) (WAL mode) |
-| 测试 | [bun:test](https://bun.sh/docs/cli/test) |
+| 测试 | [Vitest](https://vitest.dev) |
 
 ## 开发
 
@@ -111,16 +111,16 @@ bun run dev        # 同时启动 API (7030) 和 Web (7029)
 | `bun run dev` | 同时启动 API 和 Web 开发服务器 |
 | `bun run dev:api` | 仅启动 API 服务器 (端口 7030) |
 | `bun run dev:web` | 仅启动 Web 开发服务器 (端口 7029) |
-| `bun test` | 运行测试 |
+| `bun run test` | 运行测试 |
 
 ## 测试
 
 | 层 | 内容 | 命令 |
 |---|------|------|
-| L1 - 单元测试 | 拼音分词器：音节切分、span 标注、边界情况 | `bun test` |
+| L1 - 单元测试 | 拼音分词器：音节切分、span 标注、边界情况 | `bun run test` |
 
 ```bash
-bun test apps/api/src/pinyin-segmenter.test.ts
+bunx vitest run apps/api/src/pinyin-segmenter.test.ts
 ```
 
 [MIT](LICENSE) © 2026
