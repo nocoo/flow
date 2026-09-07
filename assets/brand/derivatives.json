@@ -1,0 +1,76 @@
+{
+  "source": "logo.png",
+  "files": [
+    {
+      "path": "apps/web/public/logo-24.png",
+      "role": "transparent",
+      "size": 24,
+      "sha256": "0d3b1931ef436f1d337564bba96cdc43369805f208d458f7c1e124f15de0a5a6"
+    },
+    {
+      "path": "apps/web/public/logo-32.png",
+      "role": "transparent",
+      "size": 32,
+      "sha256": "a4639f74205a5a14d158cf4eb66b1d1311bed63a43f890f21f68848de32259ed"
+    },
+    {
+      "path": "apps/web/public/logo-48.png",
+      "role": "transparent",
+      "size": 48,
+      "sha256": "6bb4bab313528fefcf73149e8e31516cbd60f8c23b636caae19d07d964469aa8"
+    },
+    {
+      "path": "apps/web/public/logo-64.png",
+      "role": "transparent",
+      "size": 64,
+      "sha256": "7a7efc66367e6bf31af92c7a828f1c8baf06db5d0b9f491b359031c12174121a"
+    },
+    {
+      "path": "apps/web/public/logo-128.png",
+      "role": "transparent",
+      "size": 128,
+      "sha256": "ca60510d900a5e3136eec11ee658ecaf12403b739aa375636640c483f1768c81"
+    },
+    {
+      "path": "apps/web/public/logo-192.png",
+      "role": "transparent",
+      "size": 192,
+      "sha256": "663eda6df7b808add3b0ea6c8996369469dfe1f4f4ad7833ad16462f7bd567f3"
+    },
+    {
+      "path": "apps/web/public/logo-256.png",
+      "role": "transparent",
+      "size": 256,
+      "sha256": "6ae11d26e901d9279353e7f75536e500315aeb85847de1717efa60a98efd6700"
+    },
+    {
+      "path": "apps/web/public/logo-512.png",
+      "role": "transparent",
+      "size": 512,
+      "sha256": "8e74c20875eff62dadbed1086c0d10956180b7a3d2b4440e0690b9b18af4be2b"
+    },
+    {
+      "path": "apps/web/public/favicon.png",
+      "role": "transparent",
+      "size": 32,
+      "sha256": "a4639f74205a5a14d158cf4eb66b1d1311bed63a43f890f21f68848de32259ed"
+    },
+    {
+      "path": "apps/web/public/favicon.ico",
+      "role": "transparent",
+      "sha256": "56b3c9727d8f9330692cf4b31d46e3a9ce3f9bbc4b1827bd59b6deafdac11d18"
+    },
+    {
+      "path": "apps/web/public/apple-touch-icon.png",
+      "role": "platform-tile",
+      "size": 180,
+      "sha256": "d6eb9a1f665bd1ac96e7072f45187d420406e02c0f631f69136551ec91a0a58c"
+    },
+    {
+      "path": "apps/web/public/favicon.svg",
+      "role": "transparent",
+      "size": 128,
+      "sha256": "fc43aaa59faac899eb5b07efaa7d1ffbbc3dd4d82e530ce9c9ce84ec93513a08"
+    }
+  ]
+}

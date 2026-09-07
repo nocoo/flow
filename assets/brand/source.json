@@ -1,0 +1,34 @@
+{
+	"project": "flow",
+	"series": "material",
+	"study": "2026-09-07-01",
+	"finishing": "01",
+	"archive": "https://github.com/nocoo/hexly.ai/tree/main/artwork/logo-family/flow/2026-09-07-01",
+	"review": "https://hexly.ai/logos/flow",
+	"masters": {
+		"logo.png": {
+			"sha256": "d08f2ee2cb2c322b54dbd9677180e210756c2cc8094784c6fb86e435d43afe23",
+			"source": "artwork/logo-family/flow/2026-09-07-01/finishing/01/exports/flow-transparent-2048.png",
+			"width": 2048,
+			"height": 2048
+		},
+		"assets/brand/icon.png": {
+			"sha256": "ff8aa8ea1a05c952bfeec2134cd8875f786969c0f0723b47deb45fc70491d2c5",
+			"source": "artwork/logo-family/flow/2026-09-07-01/finishing/01/exports/flow-icon-2048.png",
+			"width": 2048,
+			"height": 2048
+		},
+		"assets/brand/icon-rounded.png": {
+			"sha256": "64a74bcca98938f411ab9a510b56cf06e86e397104003e2346347ad94d37f395",
+			"source": "artwork/logo-family/flow/2026-09-07-01/finishing/01/exports/flow-rounded-2048.png",
+			"width": 2048,
+			"height": 2048
+		},
+		"assets/brand/background.png": {
+			"sha256": "4741a5ab12a3fd64dd13eded90894fc1eeddce7ac0f3c43735f070dabd80280b",
+			"source": "artwork/logo-family/flow/2026-09-07-01/finishing/01/background.png",
+			"width": 2048,
+			"height": 2048
+		}
+	}
+}

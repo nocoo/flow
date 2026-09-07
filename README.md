@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/brand/icon-rounded.png" alt="Flow logo" width="180" height="180" />
+</p>
+
 <h1 align="center">Flow</h1>
 
 <p align="center"><strong>LLM 驱动的中文拼音输入法引擎</strong><br>实时流式预测 · 中英混输 · 多模型对比</p>
@@ -124,3 +128,5 @@ bunx vitest run apps/api/src/pinyin-segmenter.test.ts
 ```
 
 [MIT](LICENSE) © 2026
+
+Logo assets and usage: [guide](docs/01-logo-usage.md) · [identity study](https://hexly.ai/logos/flow).
