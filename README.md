@@ -1,132 +1,101 @@
 <p align="center">
-  <img src="assets/brand/icon-rounded.png" alt="Flow logo" width="180" height="180" />
+  <img src="assets/brand/icon-rounded.png" width="128" height="128" alt="Flow logo" />
 </p>
-
 <h1 align="center">Flow</h1>
-
-<p align="center"><strong>LLM 驱动的中文拼音输入法引擎</strong><br>实时流式预测 · 中英混输 · 多模型对比</p>
-
+<p align="center">在浏览器中试验由语言模型驱动的拼音输入、中文润色和对话。</p>
 <p align="center">
-  <img src="https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white" alt="Bun"/>
-  <img src="https://img.shields.io/badge/Hono-E36002?style=flat-square&logo=hono&logoColor=white" alt="Hono"/>
-  <img src="https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React"/>
-  <img src="https://img.shields.io/badge/Tailwind-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind"/>
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/>
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License"/>
+  <a href="docs/README.en.md">English</a>
 </p>
-
----
 
 ## 这是什么
 
-Flow 是一个用大语言模型做中文拼音输入法解码器的实验项目。用户输入连续拼音字符串，系统通过 DP 分词 + LLM 语义解码，实时流式输出最自然的中文文本。
+Flow 是一个中文输入实验项目，以网页形式运行。拼音分词器提供音节线索，语言模型结合原始输入与最近上下文生成中文候选；同一页面还提供中文润色和聊天面板。
 
-核心思路：**分词器只提供音节线索，不做最终决策。LLM 同时看到原始输入和分词建议，负责纠错、消歧、英文识别和上下文理解。**
-
-```
-┌──────────┐    ┌─────────────────┐    ┌──────────────┐    ┌─────────┐
-│  用户输入 │───▶│ DP 分词 + Span  │───▶│ 结构化 Prompt │───▶│   LLM   │
-│ raw pinyin│    │  标注          │    │ raw+seg+ctx  │    │  解码器  │
-└──────────┘    └─────────────────┘    └──────────────┘    └─────────┘
-```
+项目适合观察不同模型处理连续拼音、中英混输和文本修正的表现。它需要自行接入 OpenAI 兼容的模型服务，目前没有系统输入法集成。结果质量与响应速度取决于所选模型和服务。
 
 ## 功能
 
-### 拼音输入引擎
+- **拼音候选**：动态规划切分拼音，结合原始字符串和最近已确认的文本生成结果，支持流式显示。
+- **中文润色**：通过 Prompt 要求模型修正错字、语法和标点，并调整中英文、数字之间的间距。
+- **连续输入**：拼音面板使用空格或 Enter 确认候选，润色面板使用 Enter；已确认内容会作为后续上下文。
+- **多轮对话**：流式聊天，支持停止生成和显示模型返回的推理内容。
+- **模型设置**：保存 Local、Cloud 两份 OpenAI 兼容服务配置，选择当前使用的服务，并在服务支持时读取模型列表。
 
-- **DP 音节分词** — 基于完整拼音音节表的动态规划分词，最大化覆盖率，自动处理 lv/nv 等特殊音节
-- **Span 类型标注** — 自动检测分词歧义段（uncertain）和疑似英文段（english_like），辅助 LLM 决策
-- **IME 解码器 Prompt** — 专为输入法场景设计的系统提示词，支持纠错、成语优先、英文保留
-- **上下文传递** — 已上屏内容作为上文传给模型，提升连续输入的消歧能力
-- **流式输出** — 实时 streaming 显示预测结果，200ms debounce 平衡响应速度和请求频率
+配置保存在 `apps/api/data/settings.db`。API Key 在设置响应中脱敏，数据库中的配置未加密。输入、最近上下文或对话消息会发给当前选择的模型服务；页面输入历史与聊天记录只保存在前端状态中，刷新后不恢复。当前 API 没有用户认证，适合单人本地或受控网络实验。
 
-### Chat 面板
+## 使用
 
-- **AI 对话** — 基于 AI SDK 的流式聊天界面，支持多轮对话
+完成下方开发启动后，打开 `http://localhost:7029`：
 
-### 设置系统
+1. 在设置面板填写 Base URL、API Key 和 Model ID，选择 Local 或 Cloud，点击 **Save Settings**。
+2. 在 **Pinyin Input** 输入连续拼音，等待候选后按空格或 Enter 确认。
+3. 在 **Polish** 输入中文文本并按 Enter 确认润色结果，或使用 **Flow Chat** 进行对话。
 
-- **双 Provider 切换** — Local（OMLX 本地模型）和 Cloud（AI Hub Mix 云端模型）一键切换
-- **SQLite 持久化** — 配置存储在本地 SQLite 数据库，API Key 脱敏展示
-- **动态 Provider** — 每次请求读取最新配置，无需重启服务
-
-## 项目结构
-
-```
-flow/
-├── apps/
-│   ├── api/                         # 后端 API 服务
-│   │   └── src/
-│   │       ├── index.ts             # Hono 路由入口
-│   │       ├── pinyin-segmenter.ts  # DP 分词引擎
-│   │       ├── provider.ts          # 动态 LLM Provider
-│   │       ├── db.ts                # SQLite 配置层
-│   │       ├── types.ts             # 类型定义
-│   │       └── routes/
-│   │           └── settings.ts      # 设置 API
-│   └── web/                         # 前端 React 应用
-│       └── src/
-│           ├── components/
-│           │   ├── chat.tsx          # Chat 面板
-│           │   ├── pinyin-input.tsx  # 拼音输入面板
-│           │   └── settings-sheet.tsx
-│           ├── hooks/
-│           │   ├── use-pinyin.ts     # 流式预测 Hook
-│           │   └── use-settings.tsx  # 设置 Context
-│           └── lib/
-│               └── api.ts           # API 客户端
-├── package.json
-└── LICENSE
-```
-
-## 技术栈
-
-| 层 | 技术 |
-|---|------|
-| 运行时 | [Bun](https://bun.sh) |
-| 后端框架 | [Hono](https://hono.dev) |
-| AI 推理 | [Vercel AI SDK](https://sdk.vercel.ai) + [OpenAI Compatible](https://www.npmjs.com/package/@ai-sdk/openai-compatible) |
-| 前端框架 | [React](https://react.dev) 19 + [Vite](https://vite.dev) 8 |
-| UI 组件 | [shadcn/ui](https://ui.shadcn.com) + [Radix](https://www.radix-ui.com) + [Tailwind CSS](https://tailwindcss.com) 4 |
-| 数据库 | [bun:sqlite](https://bun.sh/docs/api/sqlite) (WAL mode) |
-| 测试 | [Vitest](https://vitest.dev) |
+Local 默认指向 `http://localhost:8000/v1`，需要自行启动兼容服务并设置实际可用的模型 ID。两份配置都可以更换服务地址；仓库不包含模型权重或推理服务。
 
 ## 开发
 
-### 环境要求
-
-- [Bun](https://bun.sh) >= 1.3
-- 本地模型服务（可选）：[OMLX](https://github.com/nicuhk/omlx) 或任何 OpenAI 兼容 API
-- 云端模型服务（可选）：[AI Hub Mix](https://aihubmix.com) API Key
-
-### 快速开始
+需要 Bun 和 Node.js 22.12+，以及至少一个可用的 OpenAI 兼容模型服务。
 
 ```bash
 git clone https://github.com/nocoo/flow.git
 cd flow
-bun install
-bun run dev        # 同时启动 API (7030) 和 Web (7029)
+bun install --frozen-lockfile
 ```
 
-### 常用命令
+当前前端在 [apps/web/src/lib/api.ts](apps/web/src/lib/api.ts) 中固定使用维护者的开发域名。本机开发前，将该文件中的 `API_BASE` 改为：
 
-| 命令 | 说明 |
-|------|------|
-| `bun run dev` | 同时启动 API 和 Web 开发服务器 |
-| `bun run dev:api` | 仅启动 API 服务器 (端口 7030) |
-| `bun run dev:web` | 仅启动 Web 开发服务器 (端口 7029) |
-| `bun run test` | 运行测试 |
+```typescript
+export const API_BASE = "http://localhost:7030";
+```
+
+然后启动：
+
+```bash
+bun run dev
+```
+
+Web 默认端口为 7029，API 为 7030。API 首次启动会创建本地设置数据库。
+
+| 命令 | 用途 |
+| --- | --- |
+| `bun run dev:api` | 单独启动 Bun / Hono API |
+| `bun run dev:web` | 单独启动 Vite 前端 |
+| `bun run --cwd apps/web build` | 类型检查并构建静态前端 |
+| `bun run typecheck` | 检查前后端类型 |
+| `bun run lint` | 运行前后端静态检查 |
+
+前端构建产物仍需配合独立 API 服务，构建时应确认 `API_BASE` 指向实际 API 地址。
 
 ## 测试
 
-| 层 | 内容 | 命令 |
-|---|------|------|
-| L1 - 单元测试 | 拼音分词器：音节切分、span 标注、边界情况 | `bun run test` |
-
 ```bash
-bunx vitest run apps/api/src/pinyin-segmenter.test.ts
+bun run test
+bun run --cwd apps/api test
+bun run --cwd apps/web test
 ```
 
-[MIT](LICENSE) © 2026
+第一条运行全部单元测试，后两条分别运行拼音分词器和前端工具函数测试。当前仓库没有独立的 HTTP 或浏览器端到端测试入口；真实模型输出需要连接所配置的服务后在页面中检查。
 
-Logo assets and usage: [guide](docs/01-logo-usage.md) · [identity study](https://hexly.ai/logos/flow).
+## 技术栈
+
+| 技术 | 用途 |
+| --- | --- |
+| TypeScript / Bun | 工作区脚本与 API 运行时 |
+| Hono | 聊天、拼音、润色和设置接口 |
+| AI SDK / OpenAI Compatible | 模型调用与流式响应 |
+| React / Vite | 浏览器界面与前端构建 |
+| Tailwind CSS / Radix UI | 页面样式和组件 |
+| bun:sqlite | 本地服务配置 |
+| Vitest | 分词器与前端工具函数测试 |
+
+## 文档
+
+- [API 路由与 Prompt](apps/api/src/index.ts)
+- [拼音分词器](apps/api/src/pinyin-segmenter.ts)
+- [配置结构与默认值](apps/api/src/types.ts)
+- [品牌资源使用](docs/01-logo-usage.md)
+
+## 许可证
+
+[MIT](LICENSE)
