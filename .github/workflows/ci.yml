@@ -8,11 +8,10 @@ on:
 
 jobs:
   quality:
-    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@aec4adc1a817c56790d1698329ef9398a15a754a  # v2026.5
+    uses: nocoo/base-ci/.github/workflows/quality.yml@ab52d72877d386c9a8fd224e9ac868e88be90539
     with:
-      ignore-scripts: true
+      runtime-version: "1.4.2"
+      install-policy: "blocked"
       test-command: "bun run test:coverage"
-      enable-security: "true"
       osv-config: "osv-scanner.toml"
-      enable-l2: "false"
     secrets: inherit
