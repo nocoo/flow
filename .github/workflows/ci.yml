@@ -12,6 +12,7 @@ jobs:
     with:
       runtime-version: "1.4.2"
       install-policy: "blocked"
+      coverage-path: "coverage"
       test-command: "bun run test:coverage"
       osv-config: "osv-scanner.toml"
     secrets: inherit
