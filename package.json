@@ -28,9 +28,9 @@
     "@ai-sdk/provider-utils": "4.0.33"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.1",
     "husky": "^9.1.7",
-    "vitest": "4.1.11"
+    "vitest": "5.0.1"
   },
   "dependencies": {
     "hono": "^4.12.34"
