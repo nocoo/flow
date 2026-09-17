@@ -59,11 +59,11 @@ bun run test                # vitest run, no coverage
 ## Verification
 
 Status: `enforced` | `planned` | `manual` | `N/A`.
-6DQ = L1/L2/L3 + G1/G2 + D1. Required L1 bar is four metrics each ≥ 95%.
+6DQ = L1/L2/L3 + G1/G2 + D1. Required L1 bar is statements/branches/functions/lines each ≥95%; no skipped or focused tests.
 
 | Change | Proof | Status | Evidence |
 |---|---|---|---|
-| Logic | L1 Vitest ≥ 95% four metrics | enforced | `vitest.config.ts` thresholds 95; CI `bun run test:coverage`. pre-commit does **not** run tests |
+| Logic | L1 statements/branches/functions/lines each ≥95% across runtime logic | planned | CI enforces 95% within selected Vitest source, but excludes API provider/database/routes and client hooks without equivalent coverage. Pre-commit does **not** run tests |
 | API / schema | L2 real HTTP 100% Hono routes | planned | coverage **excludes** `apps/api/src/routes/**`, `db.ts`, `index.ts`; no real-HTTP L2 runner |
 | UI path | L3 Playwright | planned | no Playwright config or script |
 | Types / lint | G1 0 error, 0 warning | enforced | pre-commit `bun run lint` + `typecheck`; CI quality.yml |
