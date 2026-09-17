@@ -75,10 +75,10 @@ Status: `enforced` | `planned` | `manual` | `N/A`.
 
 | Hook | Verifies | Budget | Runs |
 |---|---|---|---|
-| pre-commit | working tree `bun run lint` + `typecheck` | <30s | G1 only (not L1) |
-| pre-push | `bun run test` + `typecheck` | <3min | unit without coverage; not L2/G2 |
+| pre-commit | working-tree `bun run lint` + `typecheck` (not index snapshot) | target <30s (unmeasured) | G1 only (not L1) |
+| pre-push | working-tree `bun run test` + `typecheck` (not stdin refs) | target <3min (unmeasured) | unit without coverage; not L2/G2 |
 
-Hooks are check-only. `--no-verify` is forbidden.
+Target: index-snapshot G1+L1; stdin-ref L2+G2. Check-only; `--no-verify` forbidden.
 
 ## Resources / Isolation
 
