@@ -10,7 +10,7 @@ jobs:
   quality:
     uses: nocoo/base-ci/.github/workflows/quality.yml@ad43150de3a2be2fa464b5cd2f921dc4fa9f8f0f
     with:
-      runtime-version: "1.4.2"
+      runtime-version: "1.4.3"
       install-policy: "blocked"
       coverage-path: "coverage"
       test-command: "bun run test:coverage"
