@@ -13,7 +13,7 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.37",
     "ai": "^6.0.0",
-    "hono": "4.13.12"
+    "hono": "4.13.13"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
